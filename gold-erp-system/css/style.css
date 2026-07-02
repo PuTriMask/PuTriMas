@@ -1,0 +1,221 @@
+body, html { margin: 0; padding: 0; width: 100%; height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f111a; color: #e2e8f0; overflow-x: hidden; scroll-behavior: smooth; padding-top: 35px; }
+:root { --gold-primary: #d3b44d; --gold-hover: #b8902e; --bg-dark: #0f111a; --bg-card: #1a1d29; --bg-input: #1e293b; --text-light: #f8fafc; --text-muted: #cbd5e1; }
+
+body.light-mode { background-color: #f1f5f9; color: #0f111a; --bg-dark: #f1f5f9; --bg-card: #ffffff; --bg-input: #e2e8f0; --text-light: #0f111a; --text-muted: #475569; }
+body.light-mode .gold-card { background: #ffffff !important; border: 1px solid #e2e8f0; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+body.light-mode .text-white, body.light-mode .text-light { color: var(--text-light) !important; }
+body.light-mode .bg-dark { background-color: #ffffff !important; color: #0f111a !important; border-color: #cbd5e1 !important; }
+body.light-mode .auth-card, body.light-mode .sidebar, body.light-mode .bottom-nav { background-color: #ffffff; border-color: #e2e8f0; }
+
+/* --- PERBAIKAN WARNA TOMBOL DRAG & HASHTAG DI MODE SIANG --- */
+body.light-mode .btn-outline-light {
+    color: #475569 !important; /* Mengubah ikon menjadi abu-abu gelap */
+    border-color: #cbd5e1 !important; /* Mengubah garis pinggir agar kontras */
+    background-color: transparent !important;
+}
+body.light-mode .btn-outline-light:hover {
+    background-color: #e2e8f0 !important; /* Latar saat kursor diarahkan ke tombol */
+    color: #0f111a !important; /* Ikon menjadi hitam pekat saat disentuh */
+    border-color: #94a3b8 !important;
+}
+body.light-mode .drag-handle {
+    background-color: rgba(0, 0, 0, 0.05) !important; /* Efek gelap transparan untuk tombol drag */
+}
+/* ----------------------------------------------------------- */
+
+/* =======================================================
+   TAMBAHAN KHUSUS: PENUTUP BACKGROUND HITAM DI MODE SIANG 
+   ======================================================= */
+body.light-mode .table-dark { 
+    background-color: var(--bg-card) !important; 
+    color: var(--text-light) !important; 
+    border-color: #cbd5e1 !important;
+}
+body.light-mode .table-dark th {
+    background-color: #f8fafc !important;
+    color: var(--text-muted) !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+}
+body.light-mode .table-dark td {
+    background-color: var(--bg-card) !important;
+    color: var(--text-light) !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+body.light-mode .table-hover tbody tr:hover td {
+    background-color: #f1f5f9 !important; /* Efek sorot baris tabel menjadi abu terang */
+}
+body.light-mode .cart-box {
+    background: rgba(0, 0, 0, 0.02) !important; /* Ubah box keranjang berjalan menjadi terang */
+    border: 1px dashed var(--gold-primary) !important;
+}
+body.light-mode .math-box {
+    background: rgba(212, 175, 55, 0.08) !important; /* Box estimasi harga kalkulator */
+    color: var(--text-light) !important;
+}
+body.light-mode select option {
+    background-color: var(--bg-card) !important; /* Memastikan teks drop-down pilihan terbaca jelas */
+    color: var(--text-light) !important;
+}
+body.light-mode .text-muted {
+    color: #64748b !important; /* Mempertegas warna teks pelengkap yang samar */
+}
+body.light-mode .swal2-html-container, body.light-mode .swal2-title {
+    color: var(--text-light) !important;
+}
+
+.text-white, .text-light { color: var(--text-light) !important; }
+.text-muted { color: var(--text-muted) !important; }
+
+.swal2-popup { background-color: var(--bg-card) !important; color: var(--text-light) !important; border: 1px solid rgba(212, 175, 55, 0.2) !important; }
+.swal2-title, .swal2-html-container { color: var(--text-light) !important; }
+.swal2-input, .swal2-select, .swal2-textarea { background-color: var(--bg-input) !important; color: var(--text-light) !important; border-color: rgba(148, 163, 184, 0.2) !important; }
+
+.gold-card { background: linear-gradient(135deg, #1a1d29 0%, #242936 100%); border-left: 4px solid var(--gold-primary); border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); margin-bottom: 1rem; transition: transform 0.2s ease; }
+.service-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(212,175,55,0.2); }
+
+.form-control-custom { background-color: var(--bg-input) !important; border: 1px solid rgba(212, 175, 55, 0.3) !important; color: var(--text-light) !important; }
+.form-control-custom:focus { background-color: var(--bg-input) !important; border-color: var(--gold-primary) !important; box-shadow: 0 0 0 0.25rem rgba(212, 175, 55, 0.25) !important; color: var(--text-light) !important; }
+.form-control-custom::placeholder { color: var(--text-muted) !important; opacity: 0.7 !important; }
+select.form-control-custom option { background-color: var(--bg-card) !important; color: var(--text-light) !important; }
+.form-control-custom::placeholder { color: #94a3b8 !important; opacity: 1; }
+.form-control-custom:disabled, .form-control-custom[readonly] { background-color: rgba(0,0,0,0.2) !important; opacity: 0.7; }
+
+.btn-gold { background-color: var(--gold-primary); color: #000; font-weight: 600; border: none; transition: all 0.3s ease; }
+.btn-gold:hover { background-color: var(--gold-hover); color: #000; transform: translateY(-2px); }
+
+#preloader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--bg-dark); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+.gold-spinner { width: 50px; height: 50px; border: 5px solid rgba(212, 175, 55, 0.2); border-top: 5px solid var(--gold-primary); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+.auth-container { min-height: calc(100vh - 35px); display: flex; flex-direction: column; justify-content: flex-start; align-items: center; padding: 20px; position: relative; overflow-y: auto; overflow-x: hidden; }
+.auth-card { background-color: var(--bg-card); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 16px; padding: 30px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+/* --- TAMBAHAN ANIMASI SAPU CACHE --- */
+@keyframes sweep {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-25deg); }
+    50% { transform: rotate(15deg); }
+    75% { transform: rotate(-15deg); }
+}
+.btn-sweep:hover i.fa-broom {
+    animation: sweep 0.6s ease-in-out infinite;
+    transform-origin: bottom left;
+}
+/* ----------------------------------- */
+
+.banner-container { position: relative; z-index: 20; text-align: center; width: 100%; margin-top: 0; padding-top: 20px; padding-bottom: 20px; }
+.banner-wrapper { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.banner-icons { display: flex; justify-content: center; align-items: center; position: relative; width: 200px; height: 60px; margin: 0 auto; }
+.b-icon { position: absolute; font-size: 3.5rem; color: var(--gold-primary); }
+.b-icon:nth-child(1) { transform: translate(-55px, 0) scale(0.7); }
+.b-icon:nth-child(2) { transform: translate(0, 0) scale(0.7); }
+.b-icon:nth-child(3) { transform: translate(55px, 0) scale(0.7); }
+
+#app-content { display: none; min-height: calc(100vh - 35px); padding-bottom: 80px; }
+.sidebar { background-color: var(--bg-card); border-right: 1px solid rgba(212, 175, 55, 0.1); min-height: calc(100vh - 35px); position: fixed; width: 260px; z-index: 100; top: 35px; padding-top: 20px; }
+.main-panel { margin-left: 260px; padding: 30px; position: relative; }
+.nav-link-custom { display: flex; align-items: center; padding: 14px 20px; color: var(--text-muted); text-decoration: none; border-radius: 8px; margin: 4px 15px; transition: all 0.2s ease; }
+.nav-link-custom:hover, .nav-link-custom.active { background-color: rgba(212, 175, 55, 0.15); color: var(--gold-primary); }
+.nav-link-custom i { margin-right: 12px; font-size: 1.1rem; }
+
+.bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; background-color: var(--bg-card); border-top: 1px solid rgba(212, 175, 55, 0.15); z-index: 1000; height: 65px; justify-content: space-around; align-items: center; }
+.bottom-nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-muted); text-decoration: none; font-size: 0.75rem; width: 20%; text-align: center; }
+.bottom-nav-item.active, .bottom-nav-item:hover { color: var(--gold-primary); }
+.bottom-nav-item i { font-size: 1.2rem; margin-bottom: 2px; }
+
+@media (max-width: 991.98px) {
+    .sidebar { display: none !important; }
+    .main-panel { margin-left: 0 !important; padding: 15px; padding-top: 15px; }
+    .bottom-nav { display: flex; }
+    #app-content { padding-top: 20px; }
+}
+
+#store-status-badge {
+    position: fixed; bottom: 20px; left: 20px; z-index: 99999; padding: 10px 20px; border-radius: 50px; font-weight: bold;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; align-items: center; gap: 8px; transition: all 0.3s ease; animation: bounce 2s infinite;
+}
+@keyframes bounce { 0%, 20%, 50%, 80%, 100% {transform: translateY(0);} 40% {transform: translateY(-10px);} 60% {transform: translateY(-5px);} }
+
+.swinging-board {
+    position: fixed; top: 40px; left: 50%; transform: translateX(-50%); z-index: 99999; transform-origin: top center;
+    animation: swing 3s ease-in-out infinite; background: linear-gradient(180deg, #b91c1c 0%, #7f1d1d 100%);
+    color: white; padding: 15px 30px; border: 4px solid #450a0a; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    text-align: center; display: flex; flex-direction: column; min-width: 280px;
+}
+.swinging-board::before, .swinging-board::after { content: ''; position: absolute; top: -15px; width: 6px; height: 20px; background: #a3a3a3; border-radius: 3px; box-shadow: inset 0 0 5px rgba(0,0,0,0.5); }
+.swinging-board::before { left: 30px; } .swinging-board::after { right: 30px; }
+.swinging-board h3 { margin: 0 0 5px 0; font-weight: 900; letter-spacing: 2px; border-bottom: 2px dashed rgba(255,255,255,0.3); padding-bottom: 5px; }
+@keyframes swing { 0% { transform: translateX(-50%) rotate(3deg); } 50% { transform: translateX(-50%) rotate(-3deg); } 100% { transform: translateX(-50%) rotate(3deg); } }
+
+.cart-box { border: 1px dashed var(--gold-primary); border-radius: 8px; padding: 15px; background: rgba(0,0,0,0.2); }
+.math-box { background: rgba(212, 175, 55, 0.1); border: 1px solid var(--gold-primary); border-radius: 6px; padding: 10px; margin-top: 10px; }
+.huge-number-input { font-size: 2.5rem !important; font-weight: 900 !important; text-align: center; height: auto !important; padding: 10px !important; }
+
+.carousel-control-prev-icon, .carousel-control-next-icon { filter: invert(1) brightness(1.5) sepia(1) hue-rotate(5deg) saturate(300%); }
+
+/* Marquee Styles */
+#running-text-wrapper {
+    position: fixed; top: 0; left: 0; width: 100%; z-index: 1050;
+    background: linear-gradient(90deg, #064e3b 0%, #059669 50%, #064e3b 100%);
+    color: #ffffff; padding: 6px 0; overflow: hidden; white-space: nowrap;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3); font-weight: 600; font-size: 0.95rem;
+    border-bottom: 2px solid #10b981; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    display: block; 
+}
+.marquee-content { display: inline-block; padding-left: 100%; animation: marquee 20s linear infinite; }
+@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+.top-widget-bg { top: 45px !important; } 
+
+/* Custom Badge Pelanggan/Agen */
+.badge-pelanggan { background-color: #3b82f6; color: white; border: 1px solid #60a5fa; }
+.badge-agen { background-color: #10b981; color: white; border: 1px solid #34d399; }
+.badge-admin { background-color: #f59e0b; color: #000; border: 1px solid #fbbf24; font-weight: bold; }
+
+/* Network Status UI Indicators */
+.net-online { 
+    color: #10b981 !important; 
+    /* Menggunakan animasi glowOnline baru */
+    animation: glowOnline 1.5s infinite alternate; 
+}
+.net-offline { color: #f59e0b !important; text-shadow: 0 0 8px rgba(245,158,11,0.8); animation: netPulse 2s infinite; }
+.net-manual { color: #ef4444 !important; text-shadow: 0 0 8px rgba(239,68,68,0.8); }
+
+@keyframes netPulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+/* Animasi Baru: Pendaran Hijau Kuat dan Bergerak Ke Atas */
+@keyframes glowOnline { 
+    0% { 
+        text-shadow: 0 0 5px rgba(16,185,129,0.5); 
+        transform: translateY(0); 
+    } 
+    100% { 
+        text-shadow: 0 0 15px rgba(16,185,129,1), 0 0 25px rgba(16,185,129,0.9); 
+        transform: translateY(-3px); /* Bergerak ke atas */
+    } 
+}
+#admin-local-warning { display: none; position: sticky; top: -30px; z-index: 1040; background: linear-gradient(90deg, #b91c1c 0%, #ef4444 50%, #b91c1c 100%); color: white; padding: 10px; text-align: center; font-weight: bold; border-radius: 0 0 8px 8px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4); border-bottom: 2px solid #7f1d1d; }
+/* Efek Kursor dan Animasi Drag & Drop Tabel Parameter */
+.drag-handle { 
+    cursor: grab; 
+    background-color: rgba(255, 255, 255, 0.05);
+}
+.drag-handle:active { 
+    cursor: grabbing; 
+}
+.sortable-ghost { 
+    opacity: 0.6; 
+    background-color: rgba(212, 175, 55, 0.2) !important; 
+    outline: 1px dashed var(--gold-primary);
+}
+.sortable-drag {
+    background-color: var(--bg-card) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+/* --- PERBAIKAN WARNA IKON KALENDER (DATE PICKER) --- */
+::-webkit-calendar-picker-indicator { 
+    filter: invert(1); /* Ubah ikon kalender menjadi putih di Mode Malam */
+    cursor: pointer; 
+}
+body.light-mode ::-webkit-calendar-picker-indicator { 
+    filter: invert(0); /* Kembalikan ikon kalender menjadi hitam di Mode Siang */
+}
