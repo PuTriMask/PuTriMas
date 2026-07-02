@@ -1,2 +1,2 @@
 # PuTriMas
-jual emas 
+jual emas ku
