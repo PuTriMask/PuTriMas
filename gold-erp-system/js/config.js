@@ -22,12 +22,12 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 // Fungsi ini akan dipanggil oleh tombol di HTML
 async function installPWA() {
-    if (deferredPrompt) {
+    if (window.deferredPrompt) {
         // Tampilkan prompt instalasi PWA ke pengguna
-        deferredPrompt.prompt();
+        window.deferredPrompt.prompt();
         
         // Tunggu respon dari pengguna (klik Install atau Batal)
-        const { outcome } = await deferredPrompt.userChoice;
+        const { outcome } = await window.deferredPrompt.userChoice;
         
         if (outcome === 'accepted') {
             console.log('Pengguna menyetujui instalasi PWA');
@@ -36,12 +36,12 @@ async function installPWA() {
         }
         
         // Kosongkan prompt karena hanya bisa digunakan satu kali
-        deferredPrompt = null;
+        window.deferredPrompt = null;
     } else {
-        // Tampilkan notifikasi jika aplikasi sudah terinstal atau tidak didukung
+        // Tampilkan notifikasi jika gagal
         Swal.fire({
             title: 'Informasi',
-            text: 'Aplikasi ini sudah terinstal di perangkat Anda atau browser Anda tidak mendukung fitur ini (Gunakan Google Chrome).',
+            text: 'Gagal memuat instalasi. Pastikan Anda tidak menggunakan Mode Samaran (Incognito) dan aplikasi belum terinstal di perangkat ini.',
             icon: 'info',
             confirmButtonColor: '#d4af37',
             background: 'var(--bg-card)',

@@ -2,7 +2,7 @@
   "name": "PuTriMas",
   "short_name": "PuTriMas",
   "description": "Aplikasi Sistem Jual Beli Emas PuTriMas",
-  "start_url": "./index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#0f111a",
   "theme_color": "#d3b44d",

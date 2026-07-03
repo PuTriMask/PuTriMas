@@ -26,6 +26,18 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+    <!-- Skrip Penangkap PWA Dini -->
+    <script>
+        window.deferredPrompt = null;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Cegah Chrome menampilkan prompt otomatis secara default
+            e.preventDefault();
+            // Simpan event ke variabel global window
+            window.deferredPrompt = e;
+            console.log("PWA prompt berhasil ditangkap oleh sistem!");
+        });
+    </script>
 </head>
 <body>
     <div id="preloader"><div class="gold-spinner"></div><div class="mt-3 text-gold text-center" style="color: var(--gold-primary);">Memuat ERP Emas...</div></div>
