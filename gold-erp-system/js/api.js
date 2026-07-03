@@ -1305,7 +1305,74 @@ const API = {
     },
     
     clearData: function() {
-        // ... kode fungsi clearData ...
+        const mode = document.getElementById('clear-mode').value;
+        let warningText = mode === 'TRANSAKSI'
+            ? 'Semua data riwayat transaksi dan kas keuangan akan dihapus secara permanen. Lanjutkan?'
+            : 'PERINGATAN KERAS! Seluruh data (Transaksi, Harga, Jasa, Testimoni, dll) akan dihapus permanen (Reset Pabrik). Lanjutkan?';
+
+        Swal.fire({
+            title: 'Konfirmasi Eksekusi',
+            text: warningText,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus Data!',
+            cancelButtonText: 'Batal'
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                try {
+                    UI.showLoading(true, "Mengeksekusi penghapusan...");
+
+                    const deleteFromFirebase = async (collectionName, localArray) => {
+                        if (isFirebaseActive && !isManualLocalMode) {
+                            for (let i = 0; i < localArray.length; i += 400) {
+                                const chunk = localArray.slice(i, i + 400);
+                                const batch = db.batch();
+                                chunk.forEach(item => {
+                                    if (item.UID) batch.delete(db.collection(collectionName).doc(item.UID));
+                                });
+                                await batch.commit();
+                            }
+                        }
+                    };
+
+                    if (mode === 'TRANSAKSI') {
+                        await deleteFromFirebase('appointments', dbAppointments);
+                        await deleteFromFirebase('finance', dbFinance);
+                        dbAppointments = [];
+                        dbFinance = [];
+                    } else if (mode === 'ALL') {
+                        await deleteFromFirebase('appointments', dbAppointments);
+                        await deleteFromFirebase('finance', dbFinance);
+                        await deleteFromFirebase('gold_settings', dbGoldSettings);
+                        await deleteFromFirebase('services', dbServices);
+                        await deleteFromFirebase('templates', dbTemplates);
+                        await deleteFromFirebase('testimonials', dbTestimonials);
+
+                        dbAppointments = [];
+                        dbFinance = [];
+                        dbGoldSettings = [];
+                        dbServices = [];
+                        dbTemplates = [];
+                        dbTestimonials = [];
+                    }
+
+                    await AppStorage.save();
+                    UI.showLoading(false);
+
+                    Swal.fire('Terhapus!', 'Eksekusi penghapusan data berhasil.', 'success')
+                        .then(() => {
+                            window.location.reload(); 
+                        });
+
+                } catch (err) {
+                    UI.showLoading(false);
+                    AppLogger.logError(err, "API.clearData");
+                    Swal.fire('Error', 'Gagal mengeksekusi penghapusan: ' + err.message, 'error');
+                }
+            }
+        });
     },
 
     // --- FUNGSI BARU: PERPINDAHAN POSISI LINTAS HALAMAN TANPA SERET ---
