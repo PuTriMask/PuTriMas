@@ -9,6 +9,47 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// Inisialisasi variabel untuk menyimpan prompt instalasi
+let deferredPrompt;
+
+// Menangkap event sebelum Chrome menampilkan prompt otomatis
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Mencegah prompt otomatis muncul tiba-tiba
+    e.preventDefault();
+    // Menyimpan event agar bisa dipicu nanti melalui tombol
+    deferredPrompt = e;
+});
+
+// Fungsi ini akan dipanggil oleh tombol di HTML
+async function installPWA() {
+    if (deferredPrompt) {
+        // Tampilkan prompt instalasi PWA ke pengguna
+        deferredPrompt.prompt();
+        
+        // Tunggu respon dari pengguna (klik Install atau Batal)
+        const { outcome } = await deferredPrompt.userChoice;
+        
+        if (outcome === 'accepted') {
+            console.log('Pengguna menyetujui instalasi PWA');
+        } else {
+            console.log('Pengguna menolak instalasi PWA');
+        }
+        
+        // Kosongkan prompt karena hanya bisa digunakan satu kali
+        deferredPrompt = null;
+    } else {
+        // Tampilkan notifikasi jika aplikasi sudah terinstal atau tidak didukung
+        Swal.fire({
+            title: 'Informasi',
+            text: 'Aplikasi ini sudah terinstal di perangkat Anda atau browser Anda tidak mendukung fitur ini (Gunakan Google Chrome).',
+            icon: 'info',
+            confirmButtonColor: '#d4af37',
+            background: 'var(--bg-card)',
+            color: 'var(--text-light)'
+        });
+    }
+}
+
 // ==========================================
 // 2. STATE GLOBAL & VARIABEL DASAR
 // ==========================================

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'putrimas-v1';
+const CACHE_NAME = 'putrimas-v2'; // UBAH ANGKA VERSI INI
 const urlsToCache = [
   './',
   './index.html',
