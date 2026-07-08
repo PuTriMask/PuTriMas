@@ -121,28 +121,34 @@ const AppLogger = {
 
 const DBService = {
     init: async function() {
-        try {
-            if (!firebase.apps.length) {
-                firebase.initializeApp(firebaseConfig);
-            }
-            db = firebase.firestore();
-            auth = firebase.auth();
-            
-            if (!isManualLocalMode) {
-                await db.enablePersistence({ synchronizeTabs: true });
-                isFirebaseActive = true;
-                this.setupRealtimeListeners();
-            } else {
-                isFirebaseActive = false;
-            }
-        } catch (err) {
-            AppLogger.logError(err, "DBService.init");
-            isFirebaseActive = false;
-        }
+        // ... (kode inisialisasi firebase biarkan sama) ...
 
         window.addEventListener('online', () => this.updateNetworkStatus());
         window.addEventListener('offline', () => this.updateNetworkStatus());
         this.updateNetworkStatus();
+
+        // Minta Izin Notifikasi Browser
+        if (typeof Notification !== 'undefined' && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            Notification.requestPermission();
+        }
+    },
+
+    // --- FUNGSI BARU: PENAMPIL NOTIFIKASI ---
+    showLocalNotification: function(title, body) {
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.ready.then(function(registration) {
+                    registration.showNotification(title, {
+                        body: body,
+                        icon: './icon-192.png',
+                        badge: './icon-192.png',
+                        vibrate: [200, 100, 200]
+                    });
+                });
+            } else {
+                new Notification(title, { body: body, icon: './icon-192.png' });
+            }
+        }
     },
     
     setupRealtimeListeners: function() {
@@ -169,7 +175,33 @@ const DBService = {
             batasWaktu.setDate(batasWaktu.getDate() - 60);
             const batasWaktuStr = batasWaktu.toISOString();
 
+            // Tambahkan variabel penanda agar notifikasi tidak muncul massal saat aplikasi baru dibuka
+            let isInitialAptLoad = true; 
+
             db.collection('appointments').where('Timestamp', '>=', batasWaktuStr).onSnapshot(snapshot => {
+                
+                // --- LOGIKA PEMICU NOTIFIKASI ---
+                if (!isInitialAptLoad) {
+                    snapshot.docChanges().forEach(change => {
+                        const data = change.doc.data();
+                        
+                        // 1. Notifikasi untuk Admin jika ada transaksi baru masuk
+                        if (change.type === 'added' && sessionUser && sessionUser.Role === 'Admin') {
+                            DBService.showLocalNotification('Transaksi Baru!', `Pesanan baru dari ${data.Username} telah masuk.`);
+                        }
+                        
+                        // 2. Notifikasi untuk pelanggan (dan Admin) jika status berubah
+                        if (change.type === 'modified') {
+                            if (sessionUser && (sessionUser.Role === 'Admin' || sessionUser.Username === data.Username)) {
+                                const statusTeks = data.Status_Janji.replace(/_/g, ' ');
+                                DBService.showLocalNotification('Update Transaksi', `Transaksi ${data.UID} kini berstatus: ${statusTeks}`);
+                            }
+                        }
+                    });
+                }
+                isInitialAptLoad = false; // Matikan penanda setelah load pertama selesai
+
+                // --- LOGIKA UPDATE DATA BAWAAN ---
                 let tempApts = [];
                 snapshot.forEach(doc => tempApts.push(doc.data()));
                 tempApts.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
