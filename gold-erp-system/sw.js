@@ -1,4 +1,4 @@
-const CACHE_NAME = 'putrimas-v7'; // Pastikan menaikkan versi ini jika ada update berikutnya
+const CACHE_NAME = 'putrimas-v8'; // Pastikan menaikkan versi ini jika ada update berikutnya
 const urlsToCache = [
   './',
   './index.html',
@@ -8,8 +8,8 @@ const urlsToCache = [
   './js/api.js',
   './js/auth.js',
   './js/ui.js',
-  './icon-192.png.png',
-  './icon-512.png.png'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 // 1. Install & Simpan Cache Baru

@@ -151,7 +151,7 @@ icon-192.png
                     <button id="btn-install-pwa" class="btn btn-sm btn-outline-warning rounded-circle d-flex align-items-center justify-content-center" onclick="installPWA()" style="width: 30px; height: 30px; padding: 0;" title="Install Aplikasi"><i class="fa-solid fa-download"></i></button>
                     
                     <button id="btn-network-status" class="btn btn-sm border rounded-circle d-flex align-items-center justify-content-center" onclick="UI.showNetworkDetails()" style="width: 30px; height: 30px; padding: 0; background: rgba(0,0,0,0.05);" title="Status Sinkronisasi Jaringan"><i id="network-indicator" class="fa-solid fa-cloud-arrow-up net-online"></i></button>
-
+<button class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" onclick="aktifkanNotifHP()" style="width: 30px; height: 30px; padding: 0;" title="Aktifkan Notifikasi"><i class="fa-solid fa-bell"></i></button>
                     <span id="live-clock" class="small fw-bold" style="color: var(--gold-primary);">Memuat waktu...</span>
                     <button class="btn btn-sm btn-outline-info rounded-circle d-flex align-items-center justify-content-center" onclick="UI.showCalcModal()" style="width: 30px; height: 30px; padding: 0;" title="Kalkulator Global"><i class="fa-solid fa-calculator"></i></button>
                     <button class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" onclick="UI.toggleTheme()" style="width: 30px; height: 30px; padding: 0;"><i id="theme-icon" class="fa-solid fa-sun"></i></button>
@@ -665,6 +665,24 @@ icon-192.png
             });
         });
       }
+    // KODE BARU YANG HARUS DITAMBAHKAN:
+      function aktifkanNotifHP() {
+          if (typeof Notification !== 'undefined') {
+              Notification.requestPermission().then(permission => {
+                  if (permission === 'granted') {
+                      Swal.fire('Berhasil', 'Notifikasi telah diizinkan oleh HP!', 'success');
+                      // Tes panggil notifikasi ke HP langsung
+                      if (typeof DBService !== 'undefined') {
+                          DBService.showLocalNotification("Tes Notifikasi", "Yeay! Notifikasi ERP Emas berhasil muncul di HP Anda.");
+                      }
+                  } else {
+                      Swal.fire('Gagal', 'Izin notifikasi diblokir. Silakan buka Pengaturan HP > Aplikasi > PuTriMas > Izinkan Notifikasi.', 'error');
+                  }
+              });
+          } else {
+              Swal.fire('Error', 'Perangkat/Browser ini tidak mendukung notifikasi.', 'error');
+          }
+      }
     </script>
-    </body>
+</body>
 </html>

@@ -144,10 +144,7 @@ const DBService = {
         window.addEventListener('offline', () => this.updateNetworkStatus());
         this.updateNetworkStatus();
 
-        // Minta Izin Notifikasi Browser
-        if (typeof Notification !== 'undefined' && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
-            Notification.requestPermission();
-        }
+        
     },
 
     // --- FUNGSI BARU: PENAMPIL NOTIFIKASI ---
