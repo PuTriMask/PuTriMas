@@ -42,11 +42,25 @@
 <body>
     <div id="preloader"><div class="gold-spinner"></div><div class="mt-3 text-gold text-center" style="color: var(--gold-primary);">Memuat ERP Emas...</div></div>
 
-    <div class="marquee-container"></div>
-        <div class="marquee-content" id="running-text-content">
+    <div class="marquee-container" style="overflow: hidden; white-space: nowrap; width: 100%; background-color: #1a1d29; border-bottom: 1px solid #d4af37; position: relative; z-index: 1040; padding: 5px 0;">
+        <div class="marquee-content" id="running-text-content" style="color: #d4af37; font-size: 0.9rem; display: inline-block;">
             Selamat Datang di Sistem ERP Jual Emas Untung | Mengambil data terbaru...
         </div>
     </div>
+    ```
+
+Sebagai acuan letaknya, jika digabungkan dengan kode di atas dan di bawahnya, strukturnya akan terlihat persis seperti ini:
+
+```html
+<body>
+    <div id="preloader"><div class="gold-spinner"></div><div class="mt-3 text-gold text-center" style="color: var(--gold-primary);">Memuat ERP Emas...</div></div>
+
+    <div class="marquee-container" style="overflow: hidden; white-space: nowrap; width: 100%; background-color: #1a1d29; border-bottom: 1px solid #d4af37; position: relative; z-index: 1040; padding: 5px 0;">
+        <div class="marquee-content" id="running-text-content" style="color: #d4af37; font-size: 0.9rem; display: inline-block;">
+            Selamat Datang di Sistem ERP Jual Emas Untung | Mengambil data terbaru...
+        </div>
+    </div>
+    <div id="store-status-badge" class="bg-success text-white"><i class="fa-solid fa-door-open"></i> TOKO BUKA</div>
 
     <div id="store-status-badge" class="bg-success text-white"><i class="fa-solid fa-door-open"></i> TOKO BUKA</div>
     
