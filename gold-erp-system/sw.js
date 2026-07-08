@@ -1,4 +1,4 @@
-const CACHE_NAME = 'putrimas-v6'; // Pastikan menaikkan versi ini jika ada update berikutnya
+const CACHE_NAME = 'putrimas-v7'; // Pastikan menaikkan versi ini jika ada update berikutnya
 const urlsToCache = [
   './',
   './index.html',
