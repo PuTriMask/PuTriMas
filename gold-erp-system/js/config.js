@@ -121,7 +121,24 @@ const AppLogger = {
 
 const DBService = {
     init: async function() {
-        // ... (kode inisialisasi firebase biarkan sama) ...
+        try {
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            db = firebase.firestore();
+            auth = firebase.auth();
+            
+            if (!isManualLocalMode) {
+                await db.enablePersistence({ synchronizeTabs: true });
+                isFirebaseActive = true;
+                this.setupRealtimeListeners();
+            } else {
+                isFirebaseActive = false;
+            }
+        } catch (err) {
+            AppLogger.logError(err, "DBService.init");
+            isFirebaseActive = false;
+        }
 
         window.addEventListener('online', () => this.updateNetworkStatus());
         window.addEventListener('offline', () => this.updateNetworkStatus());
