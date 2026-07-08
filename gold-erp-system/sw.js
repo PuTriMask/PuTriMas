@@ -1,4 +1,4 @@
-const CACHE_NAME = 'putrimas-v8'; // Pastikan menaikkan versi ini jika ada update berikutnya
+if (typeof AppLogger !== 'undefinedconst CACHE_NAME = 'putrimas-v8'; // Pastikan menaikkan versi ini jika ada update berikutnya
 const urlsToCache = [
   './',
   './index.html',
