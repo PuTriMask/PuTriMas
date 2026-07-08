@@ -224,7 +224,7 @@ const DBService = {
             if (typeof AppLogger !== 'undefined') AppLogger.logError(err, "onSnapshot appointments");
             console.error(err);
         });
-    }
+    },
 
     updateNetworkStatus: function() {
         const indicator = document.getElementById('network-indicator');
