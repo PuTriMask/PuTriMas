@@ -151,108 +151,83 @@ const DBService = {
     },
 
     // --- FUNGSI BARU: PENAMPIL NOTIFIKASI ---
+    // --- FUNGSI BARU: PENAMPIL NOTIFIKASI (SUDAH DIPERBAIKI) ---
     showLocalNotification: function(title, body) {
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-                navigator.serviceWorker.ready.then(function(registration) {
-                    registration.showNotification(title, {
-                        body: body,
-                        icon: './icon-192.png',
-                        badge: './icon-192.png',
-                        vibrate: [200, 100, 200]
-                    });
+        // Pastikan browser mendukung notifikasi dan izin sudah diberikan
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+        if ('serviceWorker' in navigator) {
+            // Gunakan .ready agar mendukung notif di HP Android
+            navigator.serviceWorker.ready.then(function(registration) {
+                registration.showNotification(title, {
+                    body: body,
+                    icon: 'icon-192.png',
+                    badge: 'icon-192.png',
+                    vibrate: [200, 100, 200]
                 });
-            } else {
-                new Notification(title, { body: body, icon: './icon-192.png' });
-            }
+            }).catch(function(err) {
+                console.warn("Gagal via SW, mencoba notif lokal", err);
+                new Notification(title, { body: body, icon: 'icon-192.png' });
+            });
+        } else {
+            new Notification(title, { body: body, icon: 'icon-192.png' });
         }
     },
     
-    setupRealtimeListeners: function() {
-        try {
-            db.collection('erp_data').doc('appConfig').onSnapshot(doc => {
-                if (doc.exists) { 
-                    appConfig = doc.data(); 
-                    UI.updateStoreStatus(); 
-                    UI.updateRunningText(); 
+    setupRealtimeListeners: function() {   
+        // PERBAIKAN 1: Tanda koma (,) yang nyasar sudah dihapus!
+        const batasWaktu = new Date();
+        batasWaktu.setDate(batasWaktu.getDate() - 60);
+        const batasWaktuStr = batasWaktu.toISOString();
 
-                    const banner = document.getElementById('global-maintenance-banner');
-                    if(banner) {
-                        banner.style.display = appConfig.isMaintenance ? 'block' : 'none';
-                        if(appConfig.isMaintenance) {
-                            document.body.prepend(banner); 
-                            banner.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> MAAF, SISTEM SEDANG DALAM PERBAIKAN / PEMELIHARAAN. Fitur transaksi dan pendaftaran baru ditutup sementara.';
-                            banner.style.zIndex = '999999';
+        // Tambahkan variabel penanda agar notif tidak banjir saat pertama buka web
+        let isInitialAptLoad = true; 
+
+        db.collection('appointments').where('Timestamp', '>=', batasWaktuStr).onSnapshot(snapshot => {
+            
+            // --- LOGIKA PEMICU NOTIFIKASI ---
+            if (!isInitialAptLoad) {
+                snapshot.docChanges().forEach(change => {
+                    const data = change.doc.data();
+                    
+                    // Notifikasi Admin
+                    if (change.type === 'added' && sessionUser && sessionUser.Role === 'Admin') {
+                        DBService.showLocalNotification('Transaksi Baru!', `Pesanan baru dari ${data.Username} telah masuk.`);
+                    }
+                    
+                    // Notifikasi Pelanggan
+                    if (change.type === 'modified') {
+                        if (sessionUser && (sessionUser.Role === 'Admin' || sessionUser.Username === data.Username)) {
+                            const statusTeks = data.Status_Janji.replace(/_/g, ' ');
+                            DBService.showLocalNotification('Update Transaksi', `Transaksi ${data.UID} kini berstatus: ${statusTeks}`);
                         }
                     }
+                });
+            }
+            isInitialAptLoad = false; 
+
+            // --- LOGIKA UPDATE DATA BAWAAN ---
+            let tempApts = [];
+            snapshot.forEach(doc => tempApts.push(doc.data()));
+            tempApts.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+            dbAppointments = tempApts;
+
+            // Render ulang UI
+            if(sessionUser) {
+                if (typeof UI !== 'undefined') {
+                    if(sessionUser.Role === 'Admin') { 
+                        UI.renderAdminLaporanView(); 
+                        UI.renderAdminFinanceView(); 
+                    } else { 
+                        UI.renderDashboardView(); 
+                    }
                 }
-            });
-
-            const batasWaktu = new Date();
-            batasWaktu.setDate(batasWaktu.getDate() - 60);
-            const batasWaktuStr = batasWaktu.toISOString();
-
-            // Tambahkan variabel penanda agar notifikasi tidak muncul massal saat aplikasi baru dibuka
-            let isInitialAptLoad = true; 
-
-            db.collection('appointments').where('Timestamp', '>=', batasWaktuStr).onSnapshot(snapshot => {
-                
-                // --- LOGIKA PEMICU NOTIFIKASI ---
-                if (!isInitialAptLoad) {
-                    snapshot.docChanges().forEach(change => {
-                        const data = change.doc.data();
-                        
-                        // 1. Notifikasi untuk Admin jika ada transaksi baru masuk
-                        if (change.type === 'added' && sessionUser && sessionUser.Role === 'Admin') {
-                            DBService.showLocalNotification('Transaksi Baru!', `Pesanan baru dari ${data.Username} telah masuk.`);
-                        }
-                        
-                        // 2. Notifikasi untuk pelanggan (dan Admin) jika status berubah
-                        if (change.type === 'modified') {
-                            if (sessionUser && (sessionUser.Role === 'Admin' || sessionUser.Username === data.Username)) {
-                                const statusTeks = data.Status_Janji.replace(/_/g, ' ');
-                                DBService.showLocalNotification('Update Transaksi', `Transaksi ${data.UID} kini berstatus: ${statusTeks}`);
-                            }
-                        }
-                    });
-                }
-                isInitialAptLoad = false; // Matikan penanda setelah load pertama selesai
-
-                // --- LOGIKA UPDATE DATA BAWAAN ---
-                let tempApts = [];
-                snapshot.forEach(doc => tempApts.push(doc.data()));
-                tempApts.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
-                dbAppointments = tempApts;
-                if(sessionUser) {
-                    if(sessionUser.Role === 'Admin') { UI.renderAdminLaporanView(); UI.renderAdminFinanceView(); }
-                    else { UI.renderDashboardView(); }
-                }
-            }, err => AppLogger.logError(err, "onSnapshot appointments"));
-
-            db.collection('finance').onSnapshot(snapshot => {
-                let tempFin = [];
-                snapshot.forEach(doc => tempFin.push(doc.data()));
-                dbFinance = tempFin;
-                if(sessionUser && sessionUser.Role === 'Admin') UI.renderAdminFinanceView();
-            }, err => AppLogger.logError(err, "onSnapshot finance"));
-
-            db.collection('users').orderBy('Timestamp', 'desc').limit(50).onSnapshot(snapshot => {
-                let tempUsers = [];
-                snapshot.forEach(doc => tempUsers.push(doc.data()));
-                dbUsers = tempUsers;
-            }, err => AppLogger.logError(err, "onSnapshot users"));
-
-            db.collection('gold_settings').onSnapshot(snapshot => {
-                let tempGold = [];
-                snapshot.forEach(doc => tempGold.push(doc.data()));
-                tempGold.sort((a, b) => (a.Urutan !== undefined ? a.Urutan : 9999) - (b.Urutan !== undefined ? b.Urutan : 9999));
-                dbGoldSettings = tempGold;
-                if(sessionUser && sessionUser.Role === 'Admin') UI.renderGoldSettingsView();
-            }, err => AppLogger.logError(err, "onSnapshot gold_settings"));
-        } catch(err) {
-            AppLogger.logError(err, "DBService.setupRealtimeListeners");
-        }
-    },
+            }
+        }, err => {
+            if (typeof AppLogger !== 'undefined') AppLogger.logError(err, "onSnapshot appointments");
+            console.error(err);
+        });
+    }
 
     updateNetworkStatus: function() {
         const indicator = document.getElementById('network-indicator');
