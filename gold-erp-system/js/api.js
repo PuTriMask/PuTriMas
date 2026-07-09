@@ -842,7 +842,16 @@ const API = {
                 }
                 Swal.fire("Berhasil", "Transaksi dikirim ke Admin!", "success");
             }
-            await AppStorage.save();
+            
+            // Simpan data transaksi secara terarah sesuai indeks aktual untuk memotong beban loading cloud
+            if (editAptId) {
+                const targetUpdated = dbAppointments.find(a => a.UID === editAptId);
+                await AppStorage.save('appointments', targetUpdated);
+            } else {
+                const targetNew = dbAppointments[dbAppointments.length - 1];
+                await AppStorage.save('appointments', targetNew);
+            }
+            
             UI.showLoading(false);
             UI.resetCart(); UI.navigateTo('dashboard'); UI.updateRunningText();
         } catch(err) {
@@ -955,7 +964,7 @@ const API = {
             
             // KODE PERBAIKAN: Berikan layar loading untuk semua proses persetujuan (seperti Barang Siap, dsb)
             UI.showLoading(true, "Memproses Data...");
-            await AppStorage.save();
+            await AppStorage.save('appointments', apt); // Kirim dokumen transaksi ini saja secara spesifik
             UI.showLoading(false);
             
             UI.updateRunningText();
@@ -989,16 +998,19 @@ const API = {
                 else nominalMasukLog += apt.Komisi_Agen; 
             }
             
-            dbFinance.push({ 
+            const newJournalLog = { 
                 UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], 
                 Jenis_Kas: apt.Net_Total > 0 ? "PENGELUARAN" : "PENDAPATAN", 
                 Kategori: apt.Jenis_Transaksi, 
                 Keterangan: `TRX: ${apt.UID}${apt.Is_Agen ? ` (Agen: Potong Rp ${apt.Komisi_Agen})` : ''}`, 
                 Nominal: nominalMasukLog, 
                 Laba_Tercatat: totalLaba - (apt.Komisi_Agen || 0) 
-            });
+            };
+            dbFinance.push(newJournalLog);
             
-            await AppStorage.save();
+            // Simpan dokumen status transaksi beserta log pembukuan barunya secara paralel
+            await AppStorage.save('appointments', apt);
+            await AppStorage.save('finance', newJournalLog);
             
             if (sessionUser && sessionUser.Role === "Admin") {
                 UI.renderAdminLaporanView(); 
