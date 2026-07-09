@@ -832,6 +832,8 @@ toggleAddressBox: function() {
         document.getElementById('store-status-badge').style.display = 'none'; 
         document.getElementById('store-closed-board').style.display = 'none'; 
         
+        this.updateStoreStatus(); // Panggil fungsi ini agar banner maintenance diperiksa saat login
+        
         // Indikator Floating Banner Demo Otomatis
         if (sessionUser.Username.startsWith('demo_')) {
             if (!document.getElementById('demo-floating-banner')) {
