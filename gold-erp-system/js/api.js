@@ -1161,7 +1161,14 @@ const API = {
         dbTemplates = dbTemplates.filter(t => t.UID !== s); await AppStorage.save(); UI.renderTemplates(); UI.toast("Dihapus", "success"); 
     },
     
-    manageModal: function() { const cBal = this.getCurrentBalance(); Swal.fire({ title: 'Manajemen Kas', html: `<div class="mb-3 text-start bg-dark p-2 rounded"><label class="small text-muted">Saldo Kas Fisik:</label><h4 class="text-warning m-0">${UI.formatRp(cBal)}</h4></div><select id="modal-action" class="swal2-select w-100 m-0 mb-3"><option value="TAMBAH">Tambah Modal (Debit)</option><option value="KURANG">Tarik (Kredit)</option></select><input id="modal-nom" type="number" class="swal2-input w-100 m-0 mb-3" placeholder="Nominal IDR"><input id="modal-ket" type="text" class="swal2-input w-100 m-0" placeholder="Keterangan">`, showCancelButton: true, confirmButtonText: 'Simpan', preConfirm: () => { const a = document.getElementById('modal-action').value; const n = parseInt(document.getElementById('modal-nom').value); const k = document.getElementById('modal-ket').value; if(!n || !k) return Swal.showValidationMessage('Isi lengkap!'); if(a === 'KURANG' && n > cBal) return Swal.showValidationMessage('Saldo kurang!'); return { a, n, k }; } }).then(async res => { if(res.isConfirmed) { const { a, n, k } = res.value; dbFinance.push({ UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], Jenis_Kas: a === 'TAMBAH' ? "PENDAPATAN" : "PENGELUARAN", Kategori: a === 'TAMBAH' ? "MODAL MASUK" : "KOREKSI MODAL", Keterangan: k, Nominal: n, Laba_Tercatat: 0 }); await AppStorage.save(); UI.toast("Tersimpan!", "success"); UI.renderAdminFinanceView(); } }); },
+    manageModal: function() { const cBal = this.getCurrentBalance(); Swal.fire({ title: 'Manajemen Kas', html: `<div class="mb-3 text-start bg-dark p-2 rounded"><label class="small text-muted">Saldo Kas Fisik:</label><h4 class="text-warning m-0">${UI.formatRp(cBal)}</h4></div><select id="modal-action" class="swal2-select w-100 m-0 mb-3"><option value="TAMBAH">Tambah Modal (Debit)</option><option value="KURANG">Tarik (Kredit)</option></select><input id="modal-nom" type="number" class="swal2-input w-100 m-0 mb-3" placeholder="Nominal IDR"><input id="modal-ket" type="text" class="swal2-input w-100 m-0" placeholder="Keterangan">`, showCancelButton: true, confirmButtonText: 'Simpan', preConfirm: () => { const a = document.getElementById('modal-action').value; const n = parseInt(document.getElementById('modal-nom').value); const k = document.getElementById('modal-ket').value; if(!n || !k) return Swal.showValidationMessage('Isi lengkap!'); if(a === 'KURANG' && n > cBal) return Swal.showValidationMessage('Saldo kurang!'); return { a, n, k }; } }).then(async res => { if(res.isConfirmed) { const { a, n, k } = res.value; const newModalLog = { UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], Jenis_Kas: a === 'TAMBAH' ? "PENDAPATAN" : "PENGELUARAN", Kategori: a === 'TAMBAH' ? "MODAL MASUK" : "KOREKSI MODAL", Keterangan: k, Nominal: n, Laba_Tercatat: 0 };
+            dbFinance.push(newModalLog); 
+            
+            // TANDA PERBAIKAN: Kirim parameter objek spesifik ke Firestore
+            await AppStorage.save('finance', newModalLog); 
+            
+            UI.toast("Tersimpan!", "success"); 
+            UI.renderAdminFinanceView(); } }); },
     
     showUserModal: function(uid = null) { 
         let u = uid ? dbUsers.find(x => x.UID === uid) : null; 
@@ -1250,7 +1257,21 @@ const API = {
         });
     },
     
-    addOpsCost: async function(n, k) { try { const nom = parseInt(n); if(isNaN(nom) || nom <= 0 || !k) return UI.toast("Invalid", "error"); dbFinance.push({ UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], Jenis_Kas: "BIAYA_OPS", Kategori: "OPERASIONAL", Keterangan: k, Nominal: nom, Laba_Tercatat: 0 }); await AppStorage.save(); UI.toast("Biaya dicatat!", "success"); UI.renderAdminFinanceView(); } catch(err){ AppLogger.logError(err, "API.addOpsCost"); } },
+    addOpsCost: async function(n, k) { 
+        try { 
+            const nom = parseInt(n); 
+            if(isNaN(nom) || nom <= 0 || !k) return UI.toast("Invalid", "error"); 
+            
+            const newOpsLog = { UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], Jenis_Kas: "BIAYA_OPS", Kategori: "OPERASIONAL", Keterangan: k, Nominal: nom, Laba_Tercatat: 0 };
+            dbFinance.push(newOpsLog); 
+            
+            // TANDA PERBAIKAN: Kirim parameter objek spesifik operasional ke Cloud
+            await AppStorage.save('finance', newOpsLog); 
+            
+            UI.toast("Biaya dicatat!", "success"); 
+            UI.renderAdminFinanceView(); 
+        } catch(err){ AppLogger.logError(err, "API.addOpsCost"); } 
+    },
     
     exportFinancePDF: function() {
         try {

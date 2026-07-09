@@ -1,7 +1,6 @@
 const AppStorage = {
     save: async function(collectionName = null, dataItem = null) {
         try {
-            // Backup ke local storage perangkat tetap berjalan instan untuk kebutuhan offline
             localStorage.setItem('erp_dbUsers', JSON.stringify(dbUsers));
             localStorage.setItem('erp_dbGoldSettings', JSON.stringify(dbGoldSettings));
             localStorage.setItem('erp_dbAppointments', JSON.stringify(dbAppointments));
@@ -13,16 +12,20 @@ const AppStorage = {
             localStorage.setItem('erp_globals', JSON.stringify({GLOBAL_MULTIPLIER, GLOBAL_MULTIPLIER_SILVER}));
             localStorage.setItem('erp_manual_local_mode', isManualLocalMode);
 
-            // Optimasi Cloud: Hanya kirim data yang diubah secara spesifik, hilangkan muatan massal penumpuk memori
             if (isFirebaseActive && !isManualLocalMode) {
-                if (collectionName && dataItem && (dataItem.UID || dataItem.id)) {
-                    // Penulisan tunggal langsung ke dokumen tujuan (Sangat Cepat & Tanpa Delay)
+                if (collectionName && dataItem) {
                     const docId = dataItem.UID || dataItem.id;
-                    await db.collection(collectionName).doc(docId).set(dataItem, { merge: true });
+                    if (docId) {
+                        await db.collection(collectionName).doc(docId).set(dataItem, { merge: true });
+                    }
                 } else {
-                    // Sinkronisasi khusus untuk Konfigurasi Web dan Parameter Utama agar tombol Save beraksi seketika
+                    // Selalu perbarui basis konfigurasi inti
                     await db.collection('erp_data').doc('appConfig').set(appConfig, { merge: true });
                     await db.collection('erp_data').doc('globals').set({GLOBAL_MULTIPLIER, GLOBAL_MULTIPLIER_SILVER}, { merge: true });
+                    
+                    // OTOMATIS BERSIHKAN DESINKRONISASI: Upload basis master harga & jasa karena ukurannya kecil
+                    dbGoldSettings.forEach(gold => db.collection('gold_settings').doc(gold.UID).set(gold, { merge: true }));
+                    dbServices.forEach(s => db.collection('services').doc(s.UID).set(s, { merge: true }));
                 }
             }
         } catch (err) {

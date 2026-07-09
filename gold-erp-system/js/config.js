@@ -172,27 +172,20 @@ const DBService = {
     },
     
     setupRealtimeListeners: function() {   
-        // PERBAIKAN 1: Tanda koma (,) yang nyasar sudah dihapus!
         const batasWaktu = new Date();
         batasWaktu.setDate(batasWaktu.getDate() - 60);
         const batasWaktuStr = batasWaktu.toISOString();
 
-        // Tambahkan variabel penanda agar notif tidak banjir saat pertama buka web
         let isInitialAptLoad = true; 
 
+        // 1. MONITORING REALTIME DATA TRANSAKSI
         db.collection('appointments').where('Timestamp', '>=', batasWaktuStr).onSnapshot(snapshot => {
-            
-            // --- LOGIKA PEMICU NOTIFIKASI ---
             if (!isInitialAptLoad) {
                 snapshot.docChanges().forEach(change => {
                     const data = change.doc.data();
-                    
-                    // Notifikasi Admin
                     if (change.type === 'added' && sessionUser && sessionUser.Role === 'Admin') {
                         DBService.showLocalNotification('Transaksi Baru!', `Pesanan baru dari ${data.Username} telah masuk.`);
                     }
-                    
-                    // Notifikasi Pelanggan
                     if (change.type === 'modified') {
                         if (sessionUser && (sessionUser.Role === 'Admin' || sessionUser.Username === data.Username)) {
                             const statusTeks = data.Status_Janji.replace(/_/g, ' ');
@@ -203,27 +196,73 @@ const DBService = {
             }
             isInitialAptLoad = false; 
 
-            // --- LOGIKA UPDATE DATA BAWAAN ---
             let tempApts = [];
             snapshot.forEach(doc => tempApts.push(doc.data()));
             tempApts.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
             dbAppointments = tempApts;
 
-            // Render ulang UI
-            if(sessionUser) {
-                if (typeof UI !== 'undefined') {
-                    if(sessionUser.Role === 'Admin') { 
-                        UI.renderAdminLaporanView(); 
-                        UI.renderAdminFinanceView(); 
-                    } else { 
-                        UI.renderDashboardView(); 
-                    }
-                }
+            if(sessionUser && typeof UI !== 'undefined') {
+                if(sessionUser.Role === 'Admin') { UI.renderAdminLaporanView(); UI.renderAdminFinanceView(); } 
+                else { UI.renderDashboardView(); }
             }
-        }, err => {
-            if (typeof AppLogger !== 'undefined') AppLogger.logError(err, "onSnapshot appointments");
-            console.error(err);
-        });
+        }, err => console.error(err));
+
+        // 2. MONITORING REALTIME DATA HARGA EMAS (SINKRONISASI MODUL HARGA)
+        db.collection('gold_settings').onSnapshot(snapshot => {
+            let temp = [];
+            snapshot.forEach(doc => temp.push(doc.data()));
+            temp.sort((a, b) => (a.Urutan ?? 0) - (b.Urutan ?? 0));
+            dbGoldSettings = temp;
+            localStorage.setItem('erp_dbGoldSettings', JSON.stringify(dbGoldSettings));
+            if (typeof UI !== 'undefined' && sessionUser) {
+                if (sessionUser.Role === 'Admin') UI.renderGoldSettingsView();
+                else UI.renderAppointmentView();
+            }
+        }, err => console.error(err));
+
+        // 3. MONITORING REALTIME LAPORAN KEUANGAN & JURNAL TERPERINCI
+        db.collection('finance').onSnapshot(snapshot => {
+            let temp = [];
+            snapshot.forEach(doc => temp.push(doc.data()));
+            temp.sort((a, b) => b.UID.localeCompare(a.UID));
+            dbFinance = temp;
+            localStorage.setItem('erp_dbFinance', JSON.stringify(dbFinance));
+            if (typeof UI !== 'undefined' && sessionUser && sessionUser.Role === 'Admin') {
+                UI.renderAdminFinanceView();
+            }
+        }, err => console.error(err));
+
+        // 4. MONITORING REALTIME DAFTAR LAYANAN JASA
+        db.collection('services').onSnapshot(snapshot => {
+            let temp = [];
+            snapshot.forEach(doc => temp.push(doc.data()));
+            dbServices = temp;
+            localStorage.setItem('erp_dbServices', JSON.stringify(dbServices));
+            if (typeof UI !== 'undefined') {
+                if (sessionUser && sessionUser.Role === 'Admin') UI.renderGoldSettingsView();
+                UI.populateJasaDropdown();
+            }
+        }, err => console.error(err));
+
+        // 5. MONITORING REALTIME PERUBAHAN KONFIGURASI OPERASIONAL WEB
+        db.collection('erp_data').onSnapshot(snapshot => {
+            snapshot.forEach(doc => {
+                if (doc.id === 'appConfig') {
+                    appConfig = doc.data();
+                    localStorage.setItem('erp_appConfig', JSON.stringify(appConfig));
+                }
+                if (doc.id === 'globals') {
+                    GLOBAL_MULTIPLIER = doc.data().GLOBAL_MULTIPLIER;
+                    GLOBAL_MULTIPLIER_SILVER = doc.data().GLOBAL_MULTIPLIER_SILVER;
+                    localStorage.setItem('erp_globals', JSON.stringify({GLOBAL_MULTIPLIER, GLOBAL_MULTIPLIER_SILVER}));
+                }
+            });
+            if (typeof UI !== 'undefined') {
+                UI.updateStoreStatus();
+                UI.updateLandingPage();
+                UI.updateRunningText();
+            }
+        }, err => console.error(err));
     },
 
     updateNetworkStatus: function() {
