@@ -346,15 +346,14 @@ const API = {
             if(document.getElementById('splash-store-name')) document.getElementById('splash-store-name').innerText = appConfig.notaName;
             if(document.getElementById('splash-tagline')) document.getElementById('splash-tagline').innerText = appConfig.storeTagline;
             
-            await AppStorage.save();
-            
-            // PRIORITAS UTAMA: Tampilkan Banner Pemeliharaan secara instan
+            // PRIORITAS UTAMA: Pindahkan Pembaruan UI ke ATAS sebelum sistem sibuk merespons Cloud!
             UI.updateStoreStatus(); 
             UI.updateRunningText(); 
-            
-            // Bungkus pembaruan halaman lain ke dalam isolasi try-catch
             try { UI.updateContactLinks(); } catch(e){} 
             try { UI.updateLandingPage(); } catch(e){} 
+            
+            // Simpan data setelah antarmuka web berhasil berubah
+            await AppStorage.save();
             
             UI.toast("Pengaturan berhasil disimpan", "success");
         } catch (err) {

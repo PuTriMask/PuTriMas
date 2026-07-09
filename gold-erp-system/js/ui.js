@@ -258,7 +258,7 @@ editAppointment: function(uid) {
     updateStoreStatus: function() { 
         const badge = document.getElementById('store-status-badge'); 
         const board = document.getElementById('store-closed-board'); 
-        const maintBanner = document.getElementById('global-maintenance-banner'); 
+        let maintBanner = document.getElementById('global-maintenance-banner'); 
         
         if (badge && board) {
             if(appConfig.storeOpen) { 
@@ -271,54 +271,56 @@ editAppointment: function(uid) {
             if(sessionUser) { badge.style.display = 'none'; board.style.display = 'none'; } 
         }
 
-        // Tampilkan Banner Global dan paksa ke posisi teratas (Meniru referensi yang berhasil)
+        // Failsafe: Jika elemen banner tidak ada di HTML, kita ciptakan secara otomatis
+        if (!maintBanner && appConfig.isMaintenance) {
+            maintBanner = document.createElement('div');
+            maintBanner.id = 'global-maintenance-banner';
+            document.body.prepend(maintBanner);
+        }
+
+        // Pastikan Banner muncul kuat menimpa semua desain
         if (maintBanner) {
             maintBanner.style.display = appConfig.isMaintenance ? 'block' : 'none';
             
             if(appConfig.isMaintenance) {
-                // Pindahkan paksa banner ke layer paling atas (body) agar tidak tertutup elemen lain
                 document.body.prepend(maintBanner); 
                 maintBanner.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> MAAF, SISTEM SEDANG DALAM PERBAIKAN / PEMELIHARAAN. Fitur transaksi dan pendaftaran baru ditutup sementara.';
-                maintBanner.style.zIndex = '999999';
+                // CSS !important memastikan warna dan posisi tidak bisa ditutupi elemen halaman apa pun
+                maintBanner.style.cssText = 'display: block; position: fixed; top: 0; left: 0; width: 100%; z-index: 999999 !important; background: linear-gradient(90deg, #b91c1c 0%, #ef4444 50%, #b91c1c 100%) !important; color: white !important; padding: 12px; text-align: center; font-weight: bold; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); border-bottom: 2px solid #7f1d1d;';
             }
         }
-    }, 
+    },
     
     updateLandingPage: function() { 
-        // TANDA PERBAIKAN: Seluruh elemen diuji keberadaannya sebelum diisi data
-        if(document.getElementById('landing-promo-text')) document.getElementById('landing-promo-text').innerHTML = appConfig.promoText; 
+        document.getElementById('landing-promo-text').innerHTML = appConfig.promoText; 
         const mapCont = document.getElementById('landing-map-container'); 
-        if(mapCont && appConfig.mapEmbedUrl) { 
+        if(appConfig.mapEmbedUrl) { 
             let iframeSrc = appConfig.mapEmbedUrl; 
             if(!iframeSrc.includes('<iframe')) iframeSrc = `<iframe src="${appConfig.mapEmbedUrl}" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>`; 
             let clickUrl = appConfig.mapClickUrl || appConfig.mapEmbedUrl; 
             mapCont.innerHTML = `${iframeSrc}<div class="position-absolute w-100 h-100 top-0 start-0 d-flex justify-content-center align-items-center" style="background: rgba(0,0,0,0.25); cursor:pointer; z-index: 10;" onclick="window.open('${clickUrl}', '_blank')"><button class="btn btn-gold rounded-pill shadow-lg px-4 fw-bold"><i class="fa-solid fa-map-location-dot me-2"></i>Buka di Aplikasi Maps</button></div>`; 
         } 
-        
         const tCont = document.getElementById('landing-testimonials'); 
-        if (tCont) {
-            tCont.innerHTML = ''; 
-            const tampilList = dbTestimonials.filter(t => t.Status === 'TAMPIL'); 
-            const renderCard = (t) => { let stars = ''; for(let i=0; i<t.Star; i++) stars += '<i class="fa-solid fa-star text-warning"></i>'; return `<div class="p-3 bg-dark rounded border border-secondary w-100 mb-3"><div class="d-flex justify-content-between mb-2"><h6 class="text-white mb-0">${t.Username}</h6><div>${stars}</div></div><p class="small text-muted mb-0 fst-italic">"${t.Text}"</p></div>`; }; 
-            if (tampilList.length <= 5) { 
-                tampilList.forEach(t => { tCont.innerHTML += renderCard(t); }); 
-                if(tampilList.length === 0) tCont.innerHTML = '<div class="text-muted small">Belum ada testimoni.</div>'; 
-            } else { 
-                let carouselHtml = `<div id="testiCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000"><div class="carousel-inner">`; 
-                const chunkSize = 2; 
-                for (let i = 0; i < tampilList.length; i += chunkSize) { 
-                    const chunk = tampilList.slice(i, i + chunkSize); 
-                    const activeClass = i === 0 ? 'active' : ''; 
-                    carouselHtml += `<div class="carousel-item ${activeClass}"><div class="d-flex flex-column">`; 
-                    chunk.forEach(t => { carouselHtml += renderCard(t); }); 
-                    carouselHtml += `</div></div>`; 
-                } 
-                carouselHtml += `</div><button class="carousel-control-prev" type="button" data-bs-target="#testiCarousel" data-bs-slide="prev" style="width: 5%; justify-content: flex-start; left: -15px;"><span class="carousel-control-prev-icon" aria-hidden="true"></span></button><button class="carousel-control-next" type="button" data-bs-target="#testiCarousel" data-bs-slide="next" style="width: 5%; justify-content: flex-end; right: -15px;"><span class="carousel-control-next-icon" aria-hidden="true"></span></button></div>`; 
-                tCont.innerHTML = carouselHtml; 
-            }
-        }
-        
-        if(document.getElementById('landing-card-emas-title')) document.getElementById('landing-card-emas-title').innerText = appConfig.allowBuy ? "Jual / Beli Emas" : "Jual Emas"; 
+        tCont.innerHTML = ''; 
+        const tampilList = dbTestimonials.filter(t => t.Status === 'TAMPIL'); 
+        const renderCard = (t) => { let stars = ''; for(let i=0; i<t.Star; i++) stars += '<i class="fa-solid fa-star text-warning"></i>'; return `<div class="p-3 bg-dark rounded border border-secondary w-100 mb-3"><div class="d-flex justify-content-between mb-2"><h6 class="text-white mb-0">${t.Username}</h6><div>${stars}</div></div><p class="small text-muted mb-0 fst-italic">"${t.Text}"</p></div>`; }; 
+        if (tampilList.length <= 5) { 
+            tampilList.forEach(t => { tCont.innerHTML += renderCard(t); }); 
+            if(tampilList.length === 0) tCont.innerHTML = '<div class="text-muted small">Belum ada testimoni.</div>'; 
+        } else { 
+            let carouselHtml = `<div id="testiCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="3000"><div class="carousel-inner">`; 
+            const chunkSize = 2; 
+            for (let i = 0; i < tampilList.length; i += chunkSize) { 
+                const chunk = tampilList.slice(i, i + chunkSize); 
+                const activeClass = i === 0 ? 'active' : ''; 
+                carouselHtml += `<div class="carousel-item ${activeClass}"><div class="d-flex flex-column">`; 
+                chunk.forEach(t => { carouselHtml += renderCard(t); }); 
+                carouselHtml += `</div></div>`; 
+            } 
+            carouselHtml += `</div><button class="carousel-control-prev" type="button" data-bs-target="#testiCarousel" data-bs-slide="prev" style="width: 5%; justify-content: flex-start; left: -15px;"><span class="carousel-control-prev-icon" aria-hidden="true"></span></button><button class="carousel-control-next" type="button" data-bs-target="#testiCarousel" data-bs-slide="next" style="width: 5%; justify-content: flex-end; right: -15px;"><span class="carousel-control-next-icon" aria-hidden="true"></span></button></div>`; 
+            tCont.innerHTML = carouselHtml; 
+        } 
+        document.getElementById('landing-card-emas-title').innerText = appConfig.allowBuy ? "Jual / Beli Emas" : "Jual Emas"; 
     },
     
     promptAdminLogin: function() {
@@ -1635,23 +1637,17 @@ window.uChartTypes = new Chart(ctxTypes, { type: 'doughnut', data: { labels: ['E
                     });
 
                     const autoStatus = res.value.star < 3 ? 'SEMBUNYI' : 'TAMPIL';
-                    
-                    const newTestimoniData = { 
+
+                    dbTestimonials.push({ 
                         UID: "TS"+Date.now(), 
                         Username: sessionUser.Username, 
                         Text: sanitizedText, 
                         Star: res.value.star, 
                         Status: autoStatus,
                         Timestamp: new Date().toISOString()
-                    };
+                    });
 
-                    dbTestimonials.push(newTestimoniData);
-
-                    // ===== TANDA PERBAIKAN =====
-                    // Kirim dokumen secara spesifik agar langsung diunggah ke koleksi 'testimonials'
-                    await AppStorage.save('testimonials', newTestimoniData);
-                    // ===========================
-
+                    await AppStorage.save();
                     if(autoStatus === 'SEMBUNYI') {
                         UI.toast('Ulasan disimpan. Menunggu moderasi Admin.', 'info');
                     } else {
