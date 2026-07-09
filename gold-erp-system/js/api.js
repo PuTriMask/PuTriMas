@@ -342,10 +342,20 @@ const API = {
                 appConfig.socials = [];
                 socRows.forEach((r, idx) => { appConfig.socials.push({ id: "s" + Date.now() + idx, platform: r.querySelector('.soc-plat').value, label: r.querySelector('.soc-label').value || "Tautan", url: r.querySelector('.soc-url').value }); });
             }
-            document.getElementById('splash-store-name').innerText = appConfig.notaName; 
-            document.getElementById('splash-tagline').innerText = appConfig.storeTagline; 
+            // Proteksi agar sistem tidak error jika elemen tidak ditemukan di layar admin
+            if(document.getElementById('splash-store-name')) document.getElementById('splash-store-name').innerText = appConfig.notaName;
+            if(document.getElementById('splash-tagline')) document.getElementById('splash-tagline').innerText = appConfig.storeTagline;
+            
             await AppStorage.save();
-            UI.updateContactLinks(); UI.updateLandingPage(); UI.updateStoreStatus(); UI.updateRunningText(); 
+            
+            // PRIORITAS UTAMA: Tampilkan Banner Pemeliharaan secara instan
+            UI.updateStoreStatus(); 
+            UI.updateRunningText(); 
+            
+            // Bungkus pembaruan halaman lain ke dalam isolasi try-catch
+            try { UI.updateContactLinks(); } catch(e){} 
+            try { UI.updateLandingPage(); } catch(e){} 
+            
             UI.toast("Pengaturan berhasil disimpan", "success");
         } catch (err) {
             AppLogger.logError(err, "API.saveAppConfig");
