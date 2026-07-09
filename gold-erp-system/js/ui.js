@@ -258,6 +258,8 @@ editAppointment: function(uid) {
     updateStoreStatus: function() { 
         const badge = document.getElementById('store-status-badge'); 
         const board = document.getElementById('store-closed-board'); 
+        const maintBanner = document.getElementById('global-maintenance-banner'); // Mengambil elemen banner maintenance
+        
         if(appConfig.storeOpen) { 
             badge.style.display = 'flex'; board.style.display = 'none'; 
         } else { 
@@ -266,6 +268,15 @@ editAppointment: function(uid) {
             document.getElementById('open-time-text').innerText = "Buka kembali: " + (appConfig.storeOpenTime || "Menunggu konfirmasi"); 
         } 
         if(sessionUser) { badge.style.display = 'none'; board.style.display = 'none'; } 
+        
+        // Logika memunculkan/menyembunyikan banner maintenance
+        if (maintBanner) {
+            if (appConfig.isMaintenance) {
+                maintBanner.style.display = 'block'; // Tampilkan saat Maintenance aktif
+            } else {
+                maintBanner.style.display = 'none';  // Sembunyikan saat normal
+            }
+        }
     },
     
     updateLandingPage: function() { 
