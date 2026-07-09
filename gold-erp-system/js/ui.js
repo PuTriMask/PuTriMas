@@ -258,23 +258,28 @@ editAppointment: function(uid) {
     updateStoreStatus: function() { 
         const badge = document.getElementById('store-status-badge'); 
         const board = document.getElementById('store-closed-board'); 
-        const maintBanner = document.getElementById('global-maintenance-banner'); // Mengambil elemen banner maintenance
+        const maintBanner = document.getElementById('global-maintenance-banner'); 
         
-        if(appConfig.storeOpen) { 
-            badge.style.display = 'flex'; board.style.display = 'none'; 
-        } else { 
-            badge.style.display = 'none'; board.style.display = 'flex'; 
-            document.getElementById('close-reason-text').innerText = appConfig.storeCloseReason || "Sedang istirahat"; 
-            document.getElementById('open-time-text').innerText = "Buka kembali: " + (appConfig.storeOpenTime || "Menunggu konfirmasi"); 
-        } 
-        if(sessionUser) { badge.style.display = 'none'; board.style.display = 'none'; } 
-        
-        // Logika memunculkan/menyembunyikan banner maintenance
+        if (badge && board) {
+            if(appConfig.storeOpen) { 
+                badge.style.display = 'flex'; board.style.display = 'none'; 
+            } else { 
+                badge.style.display = 'none'; board.style.display = 'flex'; 
+                if(document.getElementById('close-reason-text')) document.getElementById('close-reason-text').innerText = appConfig.storeCloseReason || "Sedang istirahat"; 
+                if(document.getElementById('open-time-text')) document.getElementById('open-time-text').innerText = "Buka kembali: " + (appConfig.storeOpenTime || "Menunggu konfirmasi"); 
+            } 
+            if(sessionUser) { badge.style.display = 'none'; board.style.display = 'none'; } 
+        }
+
+        // Tampilkan Banner Global dan paksa ke posisi teratas (Meniru referensi yang berhasil)
         if (maintBanner) {
-            if (appConfig.isMaintenance) {
-                maintBanner.style.display = 'block'; // Tampilkan saat Maintenance aktif
-            } else {
-                maintBanner.style.display = 'none';  // Sembunyikan saat normal
+            maintBanner.style.display = appConfig.isMaintenance ? 'block' : 'none';
+            
+            if(appConfig.isMaintenance) {
+                // Pindahkan paksa banner ke layer paling atas (body) agar tidak tertutup elemen lain
+                document.body.prepend(maintBanner); 
+                maintBanner.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> MAAF, SISTEM SEDANG DALAM PERBAIKAN / PEMELIHARAAN. Fitur transaksi dan pendaftaran baru ditutup sementara.';
+                maintBanner.style.zIndex = '999999';
             }
         }
     },
