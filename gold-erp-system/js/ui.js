@@ -282,7 +282,7 @@ editAppointment: function(uid) {
                 maintBanner.style.zIndex = '999999';
             }
         }
-    },
+    }, 
     
     updateLandingPage: function() { 
         document.getElementById('landing-promo-text').innerHTML = appConfig.promoText; 
