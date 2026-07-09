@@ -263,6 +263,32 @@ const DBService = {
                 UI.updateRunningText();
             }
         }, err => console.error(err));
+
+        // 6. MONITORING REALTIME DATA TESTIMONI PELANGGAN
+        db.collection('testimonials').onSnapshot(snapshot => {
+            let temp = [];
+            snapshot.forEach(doc => {
+                let data = doc.data();
+                if(!data.UID) data.UID = doc.id; // Fallback jika UID tidak ada
+                temp.push(data);
+            });
+            
+            // Urutkan dari yang terbaru (descending)
+            temp.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+            
+            dbTestimonials = temp;
+            localStorage.setItem('erp_dbTestimonials', JSON.stringify(dbTestimonials));
+            
+            if (typeof UI !== 'undefined') {
+                UI.updateLandingPage();
+                // Jika sedang di halaman setting admin, render ulang tabelnya
+                if (document.getElementById('setTestiCol')) {
+                    if (typeof API !== 'undefined' && API.fetchTestimoniPaging) {
+                        API.fetchTestimoniPaging('FIRST');
+                    }
+                }
+            }
+        }, err => console.error(err));
     },
 
     updateNetworkStatus: function() {

@@ -1630,17 +1630,23 @@ window.uChartTypes = new Chart(ctxTypes, { type: 'doughnut', data: { labels: ['E
                     });
 
                     const autoStatus = res.value.star < 3 ? 'SEMBUNYI' : 'TAMPIL';
-
-                    dbTestimonials.push({ 
+                    
+                    const newTestimoniData = { 
                         UID: "TS"+Date.now(), 
                         Username: sessionUser.Username, 
                         Text: sanitizedText, 
                         Star: res.value.star, 
                         Status: autoStatus,
                         Timestamp: new Date().toISOString()
-                    });
+                    };
 
-                    await AppStorage.save();
+                    dbTestimonials.push(newTestimoniData);
+
+                    // ===== TANDA PERBAIKAN =====
+                    // Kirim dokumen secara spesifik agar langsung diunggah ke koleksi 'testimonials'
+                    await AppStorage.save('testimonials', newTestimoniData);
+                    // ===========================
+
                     if(autoStatus === 'SEMBUNYI') {
                         UI.toast('Ulasan disimpan. Menunggu moderasi Admin.', 'info');
                     } else {

@@ -262,6 +262,12 @@ const API = {
                     if (isFirebaseActive && !isManualLocalMode) {
                         await db.collection('testimonials').doc(uid).delete();
                     }
+                    
+                    // ===== TANDA PERBAIKAN =====
+                    dbTestimonials = dbTestimonials.filter(t => t.UID !== uid && t.id !== uid);
+                    await AppStorage.save();
+                    // ===========================
+
                     UI.showLoading(false);
                     UI.toast("Ulasan Berhasil Dihapus", "success");
                     this.fetchTestimoniPaging('FIRST'); 
@@ -295,7 +301,8 @@ const API = {
                         });
                         await batch.commit();
                     }
-
+                    dbTestimonials = dbTestimonials.filter(t => !uidsToDelete.includes(t.UID) && !uidsToDelete.includes(t.id));
+                    await AppStorage.save();
                     UI.showLoading(false);
                     UI.toast("Ulasan Terpilih Berhasil Dihapus", "success");
                     this.fetchTestimoniPaging('FIRST'); 
