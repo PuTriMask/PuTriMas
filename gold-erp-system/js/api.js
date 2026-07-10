@@ -1489,11 +1489,69 @@ setInterval(() => {
 document.addEventListener('DOMContentLoaded', () => { 
     Auth.init(); 
 
+    // 1. Jalankan pemeriksaan langsung saat halaman pertama kali dibuka
+    peliharaSistemSecaraRealtime();
+
     setTimeout(() => {
         API.autoCompleteTransactions();
     }, 3000);
 
+    // 2. Jalankan pemeriksaan berkala setiap 5 detik untuk mendeteksi perubahan dari perangkat lain
     setInterval(() => {
-        API.autoCompleteTransactions();
-    }, 60000);
+        peliharaSistemSecaraRealtime();
+    }, 5000);
 });
+
+// Fungsi baru untuk sinkronisasi status Mode Perbaikan secara lintas perangkat
+function peliharaSistemSecaraRealtime() {
+    // Memanggil endpoint API untuk memeriksa status sistem terbaru di server/cloud
+    fetch('/api/system-status.php') // Sesuaikan dengan jalur endpoint API Anda
+        .then(response => response.json())
+        .then(data => {
+            const modePerbaikanAktif = data.is_maintenance; // Mengambil boolean status
+            const overlayAktif = document.getElementById('layar-perbaikan-overlay');
+
+            if (modePerbaikanAktif && !overlayAktif) {
+                // JIKA MODE PERBAIKAN AKTIF dan layar pemblokir belum muncul:
+                Swal.fire({
+                    title: 'Sistem Dalam Perbaikan',
+                    text: 'Admin sedang memperbarui sistem. Akses ditutup sementara untuk menjaga integritas data transaksi.',
+                    icon: 'warning',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                // Buat overlay pelindung agar user tidak bisa memanipulasi elemen di belakangnya
+                const overlay = document.createElement('div');
+                overlay.id = 'layar-perbaikan-overlay';
+                overlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; justify-content:center; align-items:center; color:white; font-size:20px; font-family:sans-serif; text-align:center;';
+                overlay.innerHTML = '<div><i class="fas fa-tools fa-3x fa-spin mb-3"></i><p>Mode Pemeliharaan Aktif...<br>Aplikasi akan kembali normal setelah perbaikan selesai.</p></div>';
+                document.body.appendChild(overlay);
+
+            } else if (!modePerbaikanAktif && overlayAktif) {
+                // JIKA MODE PERBAIKAN SUDAH DIMATIKAN oleh admin dan layar pemblokir masih ada:
+                overlayAktif.remove(); // Hapus pemblokir layar
+                Swal.close(); // Tutup notifikasi loading
+                
+                // Berikan notifikasi sukses bahwa sistem siap digunakan kembali
+                Swal.fire({
+                    title: 'Sistem Kembali Online!',
+                    text: 'Perbaikan selesai. Anda dapat melanjutkan transaksi sekarang.',
+                    icon: 'success',
+                    timer: 3500,
+                    showConfirmButton: true
+                });
+                
+                // Opsional: Muat ulang data esensial tanpa refresh penuh halaman
+                if(typeof API.refreshData === 'function') {
+                    API.refreshData();
+                }
+            }
+        })
+        .catch(error => {
+            console.error("Gagal menyinkronkan status perbaikan aplikasi:", error);
+        });
+}
