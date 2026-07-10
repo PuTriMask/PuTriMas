@@ -47,9 +47,9 @@
             Selamat Datang di Sistem ERP Jual Emas Untung | Mengambil data terbaru...
         </div>
     </div>
-
-    <div id="store-status-badge" class="bg-success text-white"><i class="fa-solid fa-door-open"></i> TOKO BUKA</div>
     
+    <div id="store-status-badge" class="bg-success text-white"><i class="fa-solid fa-door-open"></i> TOKO BUKA</div>
+
     <div id="store-closed-board" class="swinging-board" style="display: none;">
         <h3>TOKO TUTUP</h3>
         <small id="close-reason-text">Sedang Istirahat</small>
@@ -151,7 +151,7 @@
                     <button id="btn-install-pwa" class="btn btn-sm btn-outline-warning rounded-circle d-flex align-items-center justify-content-center" onclick="installPWA()" style="width: 30px; height: 30px; padding: 0;" title="Install Aplikasi"><i class="fa-solid fa-download"></i></button>
                     
                     <button id="btn-network-status" class="btn btn-sm border rounded-circle d-flex align-items-center justify-content-center" onclick="UI.showNetworkDetails()" style="width: 30px; height: 30px; padding: 0; background: rgba(0,0,0,0.05);" title="Status Sinkronisasi Jaringan"><i id="network-indicator" class="fa-solid fa-cloud-arrow-up net-online"></i></button>
-
+<button class="btn btn-sm btn-outline-danger rounded-circle d-flex align-items-center justify-content-center" onclick="aktifkanNotifHP()" style="width: 30px; height: 30px; padding: 0;" title="Aktifkan Notifikasi"><i class="fa-solid fa-bell"></i></button>
                     <span id="live-clock" class="small fw-bold" style="color: var(--gold-primary);">Memuat waktu...</span>
                     <button class="btn btn-sm btn-outline-info rounded-circle d-flex align-items-center justify-content-center" onclick="UI.showCalcModal()" style="width: 30px; height: 30px; padding: 0;" title="Kalkulator Global"><i class="fa-solid fa-calculator"></i></button>
                     <button class="btn btn-sm btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center" onclick="UI.toggleTheme()" style="width: 30px; height: 30px; padding: 0;"><i id="theme-icon" class="fa-solid fa-sun"></i></button>
@@ -171,7 +171,7 @@
         
         <div class="main-panel">
             <div id="global-maintenance-banner" style="display: none; position: fixed; top: 0; left: 0; width: 100%; z-index: 99999; background: linear-gradient(90deg, #b91c1c 0%, #ef4444 50%, #b91c1c 100%); color: white; padding: 12px; text-align: center; font-weight: bold; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); border-bottom: 2px solid #7f1d1d;">
-                <i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> PEMBERITAHUAN: Sistem sedang dalam pemeliharaan (Maintenance) rutin. Fitur transaksi dihentikan sementara.
+                <i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> MAAF, SISTEM SEDANG DALAM PERBAIKAN / PEMELIHARAAN. Fitur transaksi dan pendaftaran baru ditutup sementara.
             </div>
     
             <div id="admin-local-warning" style="display: none;"></div>
@@ -652,5 +652,37 @@
     <script src="js/auth.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/api.js"></script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => {
+              console.log('ServiceWorker sukses didaftarkan!');
+            })
+            .catch(error => {
+              console.log('ServiceWorker gagal didaftarkan: ', error);
+            });
+        });
+      }
+    // KODE BARU YANG HARUS DITAMBAHKAN:
+      function aktifkanNotifHP() {
+          if (typeof Notification !== 'undefined') {
+              Notification.requestPermission().then(permission => {
+                  if (permission === 'granted') {
+                      Swal.fire('Berhasil', 'Notifikasi telah diizinkan oleh HP!', 'success');
+                      // Tes panggil notifikasi ke HP langsung
+                      if (typeof DBService !== 'undefined') {
+                          DBService.showLocalNotification("Tes Notifikasi", "Yeay! Notifikasi ERP Emas berhasil muncul di HP Anda.");
+                      }
+                  } else {
+                      Swal.fire('Gagal', 'Izin notifikasi diblokir. Silakan buka Pengaturan HP > Aplikasi > PuTriMas > Izinkan Notifikasi.', 'error');
+                  }
+              });
+          } else {
+              Swal.fire('Error', 'Perangkat/Browser ini tidak mendukung notifikasi.', 'error');
+          }
+      }
+    </script>
 </body>
 </html>
