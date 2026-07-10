@@ -1,7 +1,6 @@
 const AppStorage = {
-    save: async function() {
+    save: async function(collectionName = null, dataItem = null) {
         try {
-            // Backup to local storage for offline capabilities
             localStorage.setItem('erp_dbUsers', JSON.stringify(dbUsers));
             localStorage.setItem('erp_dbGoldSettings', JSON.stringify(dbGoldSettings));
             localStorage.setItem('erp_dbAppointments', JSON.stringify(dbAppointments));
@@ -14,32 +13,19 @@ const AppStorage = {
             localStorage.setItem('erp_manual_local_mode', isManualLocalMode);
 
             if (isFirebaseActive && !isManualLocalMode) {
-                // Kumpulkan semua instruksi penulisan ke dalam satu antrean (Queue)
-                const allWrites = [];
-                
-                allWrites.push({ col: 'erp_data', doc: 'appConfig', data: appConfig });
-                allWrites.push({ col: 'erp_data', doc: 'globals', data: {GLOBAL_MULTIPLIER, GLOBAL_MULTIPLIER_SILVER} });
-                
-                dbAppointments.forEach(apt => allWrites.push({ col: 'appointments', doc: apt.UID, data: apt }));
-                dbFinance.forEach(fin => allWrites.push({ col: 'finance', doc: fin.UID, data: fin }));
-                dbGoldSettings.forEach(gold => allWrites.push({ col: 'gold_settings', doc: gold.UID, data: gold }));
-                dbUsers.forEach(u => allWrites.push({ col: 'users', doc: u.UID, data: u }));
-                dbServices.forEach(s => allWrites.push({ col: 'services', doc: s.UID, data: s }));
-                dbTemplates.forEach(t => allWrites.push({ col: 'templates', doc: t.UID, data: t }));
-                dbTestimonials.forEach(ts => allWrites.push({ col: 'testimonials', doc: ts.UID, data: ts }));
-
-                // FIREBASE LIMIT: Maks 500 dokumen per pengiriman.
-                // SOLUSI: Pecah antrean menjadi potongan (chunks) berisi 400 data agar tidak error.
-                const chunkSize = 400;
-                for (let i = 0; i < allWrites.length; i += chunkSize) {
-                    const chunk = allWrites.slice(i, i + chunkSize);
-                    const batch = db.batch(); 
+                if (collectionName && dataItem) {
+                    const docId = dataItem.UID || dataItem.id;
+                    if (docId) {
+                        await db.collection(collectionName).doc(docId).set(dataItem, { merge: true });
+                    }
+                } else {
+                    // Selalu perbarui basis konfigurasi inti
+                    await db.collection('erp_data').doc('appConfig').set(appConfig, { merge: true });
+                    await db.collection('erp_data').doc('globals').set({GLOBAL_MULTIPLIER, GLOBAL_MULTIPLIER_SILVER}, { merge: true });
                     
-                    chunk.forEach(w => {
-                        batch.set(db.collection(w.col).doc(w.doc), w.data, { merge: true });
-                    });
-                    
-                    await batch.commit(); // Eksekusi pengiriman ke Cloud secara bertahap
+                    // OTOMATIS BERSIHKAN DESINKRONISASI: Upload basis master harga & jasa karena ukurannya kecil
+                    dbGoldSettings.forEach(gold => db.collection('gold_settings').doc(gold.UID).set(gold, { merge: true }));
+                    dbServices.forEach(s => db.collection('services').doc(s.UID).set(s, { merge: true }));
                 }
             }
         } catch (err) {

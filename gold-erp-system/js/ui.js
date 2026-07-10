@@ -258,14 +258,37 @@ editAppointment: function(uid) {
     updateStoreStatus: function() { 
         const badge = document.getElementById('store-status-badge'); 
         const board = document.getElementById('store-closed-board'); 
-        if(appConfig.storeOpen) { 
-            badge.style.display = 'flex'; board.style.display = 'none'; 
-        } else { 
-            badge.style.display = 'none'; board.style.display = 'flex'; 
-            document.getElementById('close-reason-text').innerText = appConfig.storeCloseReason || "Sedang istirahat"; 
-            document.getElementById('open-time-text').innerText = "Buka kembali: " + (appConfig.storeOpenTime || "Menunggu konfirmasi"); 
-        } 
-        if(sessionUser) { badge.style.display = 'none'; board.style.display = 'none'; } 
+        let maintBanner = document.getElementById('global-maintenance-banner'); 
+        
+        if (badge && board) {
+            if(appConfig.storeOpen) { 
+                badge.style.display = 'flex'; board.style.display = 'none'; 
+            } else { 
+                badge.style.display = 'none'; board.style.display = 'flex'; 
+                if(document.getElementById('close-reason-text')) document.getElementById('close-reason-text').innerText = appConfig.storeCloseReason || "Sedang istirahat"; 
+                if(document.getElementById('open-time-text')) document.getElementById('open-time-text').innerText = "Buka kembali: " + (appConfig.storeOpenTime || "Menunggu konfirmasi"); 
+            } 
+            if(sessionUser) { badge.style.display = 'none'; board.style.display = 'none'; } 
+        }
+
+        // Failsafe: Jika elemen banner tidak ada di HTML, kita ciptakan secara otomatis
+        if (!maintBanner && appConfig.isMaintenance) {
+            maintBanner = document.createElement('div');
+            maintBanner.id = 'global-maintenance-banner';
+            document.body.prepend(maintBanner);
+        }
+
+        // Pastikan Banner muncul kuat menimpa semua desain
+        if (maintBanner) {
+            maintBanner.style.display = appConfig.isMaintenance ? 'block' : 'none';
+            
+            if(appConfig.isMaintenance) {
+                document.body.prepend(maintBanner); 
+                maintBanner.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> MAAF, SISTEM SEDANG DALAM PERBAIKAN / PEMELIHARAAN. Fitur transaksi dan pendaftaran baru ditutup sementara.';
+                // CSS !important memastikan warna dan posisi tidak bisa ditutupi elemen halaman apa pun
+                maintBanner.style.cssText = 'display: block; position: fixed; top: 0; left: 0; width: 100%; z-index: 999999 !important; background: linear-gradient(90deg, #b91c1c 0%, #ef4444 50%, #b91c1c 100%) !important; color: white !important; padding: 12px; text-align: center; font-weight: bold; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); border-bottom: 2px solid #7f1d1d;';
+            }
+        }
     },
     
     updateLandingPage: function() { 
@@ -820,6 +843,8 @@ toggleAddressBox: function() {
         
         document.getElementById('store-status-badge').style.display = 'none'; 
         document.getElementById('store-closed-board').style.display = 'none'; 
+        
+        this.updateStoreStatus(); // Panggil fungsi ini agar banner maintenance diperiksa saat login
         
         // Indikator Floating Banner Demo Otomatis
         if (sessionUser.Username.startsWith('demo_')) {

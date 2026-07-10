@@ -262,6 +262,12 @@ const API = {
                     if (isFirebaseActive && !isManualLocalMode) {
                         await db.collection('testimonials').doc(uid).delete();
                     }
+                    
+                    // ===== TANDA PERBAIKAN =====
+                    dbTestimonials = dbTestimonials.filter(t => t.UID !== uid && t.id !== uid);
+                    await AppStorage.save();
+                    // ===========================
+
                     UI.showLoading(false);
                     UI.toast("Ulasan Berhasil Dihapus", "success");
                     this.fetchTestimoniPaging('FIRST'); 
@@ -295,7 +301,8 @@ const API = {
                         });
                         await batch.commit();
                     }
-
+                    dbTestimonials = dbTestimonials.filter(t => !uidsToDelete.includes(t.UID) && !uidsToDelete.includes(t.id));
+                    await AppStorage.save();
                     UI.showLoading(false);
                     UI.toast("Ulasan Terpilih Berhasil Dihapus", "success");
                     this.fetchTestimoniPaging('FIRST'); 
@@ -338,7 +345,27 @@ const API = {
             document.getElementById('splash-store-name').innerText = appConfig.notaName; 
             document.getElementById('splash-tagline').innerText = appConfig.storeTagline; 
             await AppStorage.save();
-            UI.updateContactLinks(); UI.updateLandingPage(); UI.updateStoreStatus(); UI.updateRunningText(); 
+            
+            // Pembaruan UI bawaan Anda
+            UI.updateContactLinks(); 
+            UI.updateLandingPage(); 
+            
+            UI.updateStoreStatus(); 
+            UI.updateRunningText(); 
+
+            // 👇 KODE PENYELESAIAN 0% RISIKO: Memaksa Banner Muncul Secara Instan Tanpa Refresh
+            const bannerMaintenance = document.getElementById('global-maintenance-banner');
+            if (bannerMaintenance) {
+                // Langsung ubah style CSS seketika tombol ditekan
+                bannerMaintenance.style.display = appConfig.isMaintenance ? 'block' : 'none';
+                
+                if (appConfig.isMaintenance) {
+                    // Pindahkan banner ke posisi paling atas layar (prepend)
+                    document.body.prepend(bannerMaintenance);
+                    bannerMaintenance.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> PEMBERITAHUAN: Sistem sedang dalam pemeliharaan (Maintenance) rutin. Fitur transaksi dihentikan sementara.';
+                    bannerMaintenance.style.zIndex = '999999';
+                }
+            }
             UI.toast("Pengaturan berhasil disimpan", "success");
         } catch (err) {
             AppLogger.logError(err, "API.saveAppConfig");
@@ -842,7 +869,16 @@ const API = {
                 }
                 Swal.fire("Berhasil", "Transaksi dikirim ke Admin!", "success");
             }
-            await AppStorage.save();
+            
+            // Simpan data transaksi secara terarah sesuai indeks aktual untuk memotong beban loading cloud
+            if (editAptId) {
+                const targetUpdated = dbAppointments.find(a => a.UID === editAptId);
+                await AppStorage.save('appointments', targetUpdated);
+            } else {
+                const targetNew = dbAppointments[dbAppointments.length - 1];
+                await AppStorage.save('appointments', targetNew);
+            }
+            
             UI.showLoading(false);
             UI.resetCart(); UI.navigateTo('dashboard'); UI.updateRunningText();
         } catch(err) {
@@ -955,7 +991,7 @@ const API = {
             
             // KODE PERBAIKAN: Berikan layar loading untuk semua proses persetujuan (seperti Barang Siap, dsb)
             UI.showLoading(true, "Memproses Data...");
-            await AppStorage.save();
+            await AppStorage.save('appointments', apt); // Kirim dokumen transaksi ini saja secara spesifik
             UI.showLoading(false);
             
             UI.updateRunningText();
@@ -989,16 +1025,19 @@ const API = {
                 else nominalMasukLog += apt.Komisi_Agen; 
             }
             
-            dbFinance.push({ 
+            const newJournalLog = { 
                 UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], 
                 Jenis_Kas: apt.Net_Total > 0 ? "PENGELUARAN" : "PENDAPATAN", 
                 Kategori: apt.Jenis_Transaksi, 
                 Keterangan: `TRX: ${apt.UID}${apt.Is_Agen ? ` (Agen: Potong Rp ${apt.Komisi_Agen})` : ''}`, 
                 Nominal: nominalMasukLog, 
                 Laba_Tercatat: totalLaba - (apt.Komisi_Agen || 0) 
-            });
+            };
+            dbFinance.push(newJournalLog);
             
-            await AppStorage.save();
+            // Simpan dokumen status transaksi beserta log pembukuan barunya secara paralel
+            await AppStorage.save('appointments', apt);
+            await AppStorage.save('finance', newJournalLog);
             
             if (sessionUser && sessionUser.Role === "Admin") {
                 UI.renderAdminLaporanView(); 
@@ -1149,7 +1188,14 @@ const API = {
         dbTemplates = dbTemplates.filter(t => t.UID !== s); await AppStorage.save(); UI.renderTemplates(); UI.toast("Dihapus", "success"); 
     },
     
-    manageModal: function() { const cBal = this.getCurrentBalance(); Swal.fire({ title: 'Manajemen Kas', html: `<div class="mb-3 text-start bg-dark p-2 rounded"><label class="small text-muted">Saldo Kas Fisik:</label><h4 class="text-warning m-0">${UI.formatRp(cBal)}</h4></div><select id="modal-action" class="swal2-select w-100 m-0 mb-3"><option value="TAMBAH">Tambah Modal (Debit)</option><option value="KURANG">Tarik (Kredit)</option></select><input id="modal-nom" type="number" class="swal2-input w-100 m-0 mb-3" placeholder="Nominal IDR"><input id="modal-ket" type="text" class="swal2-input w-100 m-0" placeholder="Keterangan">`, showCancelButton: true, confirmButtonText: 'Simpan', preConfirm: () => { const a = document.getElementById('modal-action').value; const n = parseInt(document.getElementById('modal-nom').value); const k = document.getElementById('modal-ket').value; if(!n || !k) return Swal.showValidationMessage('Isi lengkap!'); if(a === 'KURANG' && n > cBal) return Swal.showValidationMessage('Saldo kurang!'); return { a, n, k }; } }).then(async res => { if(res.isConfirmed) { const { a, n, k } = res.value; dbFinance.push({ UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], Jenis_Kas: a === 'TAMBAH' ? "PENDAPATAN" : "PENGELUARAN", Kategori: a === 'TAMBAH' ? "MODAL MASUK" : "KOREKSI MODAL", Keterangan: k, Nominal: n, Laba_Tercatat: 0 }); await AppStorage.save(); UI.toast("Tersimpan!", "success"); UI.renderAdminFinanceView(); } }); },
+    manageModal: function() { const cBal = this.getCurrentBalance(); Swal.fire({ title: 'Manajemen Kas', html: `<div class="mb-3 text-start bg-dark p-2 rounded"><label class="small text-muted">Saldo Kas Fisik:</label><h4 class="text-warning m-0">${UI.formatRp(cBal)}</h4></div><select id="modal-action" class="swal2-select w-100 m-0 mb-3"><option value="TAMBAH">Tambah Modal (Debit)</option><option value="KURANG">Tarik (Kredit)</option></select><input id="modal-nom" type="number" class="swal2-input w-100 m-0 mb-3" placeholder="Nominal IDR"><input id="modal-ket" type="text" class="swal2-input w-100 m-0" placeholder="Keterangan">`, showCancelButton: true, confirmButtonText: 'Simpan', preConfirm: () => { const a = document.getElementById('modal-action').value; const n = parseInt(document.getElementById('modal-nom').value); const k = document.getElementById('modal-ket').value; if(!n || !k) return Swal.showValidationMessage('Isi lengkap!'); if(a === 'KURANG' && n > cBal) return Swal.showValidationMessage('Saldo kurang!'); return { a, n, k }; } }).then(async res => { if(res.isConfirmed) { const { a, n, k } = res.value; const newModalLog = { UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], Jenis_Kas: a === 'TAMBAH' ? "PENDAPATAN" : "PENGELUARAN", Kategori: a === 'TAMBAH' ? "MODAL MASUK" : "KOREKSI MODAL", Keterangan: k, Nominal: n, Laba_Tercatat: 0 };
+            dbFinance.push(newModalLog); 
+            
+            // TANDA PERBAIKAN: Kirim parameter objek spesifik ke Firestore
+            await AppStorage.save('finance', newModalLog); 
+            
+            UI.toast("Tersimpan!", "success"); 
+            UI.renderAdminFinanceView(); } }); },
     
     showUserModal: function(uid = null) { 
         let u = uid ? dbUsers.find(x => x.UID === uid) : null; 
@@ -1238,7 +1284,21 @@ const API = {
         });
     },
     
-    addOpsCost: async function(n, k) { try { const nom = parseInt(n); if(isNaN(nom) || nom <= 0 || !k) return UI.toast("Invalid", "error"); dbFinance.push({ UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], Jenis_Kas: "BIAYA_OPS", Kategori: "OPERASIONAL", Keterangan: k, Nominal: nom, Laba_Tercatat: 0 }); await AppStorage.save(); UI.toast("Biaya dicatat!", "success"); UI.renderAdminFinanceView(); } catch(err){ AppLogger.logError(err, "API.addOpsCost"); } },
+    addOpsCost: async function(n, k) { 
+        try { 
+            const nom = parseInt(n); 
+            if(isNaN(nom) || nom <= 0 || !k) return UI.toast("Invalid", "error"); 
+            
+            const newOpsLog = { UID: "F"+Date.now(), Tanggal: new Date().toISOString().split('T')[0], Jenis_Kas: "BIAYA_OPS", Kategori: "OPERASIONAL", Keterangan: k, Nominal: nom, Laba_Tercatat: 0 };
+            dbFinance.push(newOpsLog); 
+            
+            // TANDA PERBAIKAN: Kirim parameter objek spesifik operasional ke Cloud
+            await AppStorage.save('finance', newOpsLog); 
+            
+            UI.toast("Biaya dicatat!", "success"); 
+            UI.renderAdminFinanceView(); 
+        } catch(err){ AppLogger.logError(err, "API.addOpsCost"); } 
+    },
     
     exportFinancePDF: function() {
         try {

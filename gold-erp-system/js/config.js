@@ -143,66 +143,152 @@ const DBService = {
         window.addEventListener('online', () => this.updateNetworkStatus());
         window.addEventListener('offline', () => this.updateNetworkStatus());
         this.updateNetworkStatus();
+
+        
+    },
+
+    // --- FUNGSI BARU: PENAMPIL NOTIFIKASI ---
+    // --- FUNGSI BARU: PENAMPIL NOTIFIKASI (SUDAH DIPERBAIKI) ---
+    showLocalNotification: function(title, body) {
+        // Pastikan browser mendukung notifikasi dan izin sudah diberikan
+        if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+        if ('serviceWorker' in navigator) {
+            // Gunakan .ready agar mendukung notif di HP Android
+            navigator.serviceWorker.ready.then(function(registration) {
+                registration.showNotification(title, {
+                    body: body,
+                    icon: 'icon-192.png',
+                    badge: 'icon-192.png',
+                    vibrate: [200, 100, 200]
+                });
+            }).catch(function(err) {
+                console.warn("Gagal via SW, mencoba notif lokal", err);
+                new Notification(title, { body: body, icon: 'icon-192.png' });
+            });
+        } else {
+            new Notification(title, { body: body, icon: 'icon-192.png' });
+        }
     },
     
-    setupRealtimeListeners: function() {
-        try {
-            db.collection('erp_data').doc('appConfig').onSnapshot(doc => {
-                if (doc.exists) { 
-                    appConfig = doc.data(); 
-                    UI.updateStoreStatus(); 
-                    UI.updateRunningText(); 
+    setupRealtimeListeners: function() {   
+        const batasWaktu = new Date();
+        batasWaktu.setDate(batasWaktu.getDate() - 60);
+        const batasWaktuStr = batasWaktu.toISOString();
 
-                    const banner = document.getElementById('global-maintenance-banner');
-                    if(banner) {
-                        banner.style.display = appConfig.isMaintenance ? 'block' : 'none';
-                        if(appConfig.isMaintenance) {
-                            document.body.prepend(banner); 
-                            banner.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> MAAF, SISTEM SEDANG DALAM PERBAIKAN / PEMELIHARAAN. Fitur transaksi dan pendaftaran baru ditutup sementara.';
-                            banner.style.zIndex = '999999';
+        let isInitialAptLoad = true; 
+
+        // 1. MONITORING REALTIME DATA TRANSAKSI
+        db.collection('appointments').where('Timestamp', '>=', batasWaktuStr).onSnapshot(snapshot => {
+            if (!isInitialAptLoad) {
+                snapshot.docChanges().forEach(change => {
+                    const data = change.doc.data();
+                    if (change.type === 'added' && sessionUser && sessionUser.Role === 'Admin') {
+                        DBService.showLocalNotification('Transaksi Baru!', `Pesanan baru dari ${data.Username} telah masuk.`);
+                    }
+                    if (change.type === 'modified') {
+                        if (sessionUser && (sessionUser.Role === 'Admin' || sessionUser.Username === data.Username)) {
+                            const statusTeks = data.Status_Janji.replace(/_/g, ' ');
+                            DBService.showLocalNotification('Update Transaksi', `Transaksi ${data.UID} kini berstatus: ${statusTeks}`);
                         }
                     }
+                });
+            }
+            isInitialAptLoad = false; 
+
+            let tempApts = [];
+            snapshot.forEach(doc => tempApts.push(doc.data()));
+            tempApts.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+            dbAppointments = tempApts;
+
+            if(sessionUser && typeof UI !== 'undefined') {
+                if(sessionUser.Role === 'Admin') { UI.renderAdminLaporanView(); UI.renderAdminFinanceView(); } 
+                else { UI.renderDashboardView(); }
+            }
+        }, err => console.error(err));
+
+        // 2. MONITORING REALTIME DATA HARGA EMAS (SINKRONISASI MODUL HARGA)
+        db.collection('gold_settings').onSnapshot(snapshot => {
+            let temp = [];
+            snapshot.forEach(doc => temp.push(doc.data()));
+            temp.sort((a, b) => (a.Urutan ?? 0) - (b.Urutan ?? 0));
+            dbGoldSettings = temp;
+            localStorage.setItem('erp_dbGoldSettings', JSON.stringify(dbGoldSettings));
+            if (typeof UI !== 'undefined' && sessionUser) {
+                if (sessionUser.Role === 'Admin') UI.renderGoldSettingsView();
+                else UI.renderAppointmentView();
+            }
+        }, err => console.error(err));
+
+        // 3. MONITORING REALTIME LAPORAN KEUANGAN & JURNAL TERPERINCI
+        db.collection('finance').onSnapshot(snapshot => {
+            let temp = [];
+            snapshot.forEach(doc => temp.push(doc.data()));
+            temp.sort((a, b) => b.UID.localeCompare(a.UID));
+            dbFinance = temp;
+            localStorage.setItem('erp_dbFinance', JSON.stringify(dbFinance));
+            if (typeof UI !== 'undefined' && sessionUser && sessionUser.Role === 'Admin') {
+                UI.renderAdminFinanceView();
+            }
+        }, err => console.error(err));
+
+        // 4. MONITORING REALTIME DAFTAR LAYANAN JASA
+        db.collection('services').onSnapshot(snapshot => {
+            let temp = [];
+            snapshot.forEach(doc => temp.push(doc.data()));
+            dbServices = temp;
+            localStorage.setItem('erp_dbServices', JSON.stringify(dbServices));
+            if (typeof UI !== 'undefined') {
+                if (sessionUser && sessionUser.Role === 'Admin') UI.renderGoldSettingsView();
+                UI.populateJasaDropdown();
+            }
+        }, err => console.error(err));
+
+        // 5. MONITORING REALTIME PERUBAHAN KONFIGURASI OPERASIONAL WEB
+        db.collection('erp_data').onSnapshot(snapshot => {
+            snapshot.forEach(doc => {
+                if (doc.id === 'appConfig') {
+                    appConfig = doc.data();
+                    localStorage.setItem('erp_appConfig', JSON.stringify(appConfig));
+                }
+                if (doc.id === 'globals') {
+                    GLOBAL_MULTIPLIER = doc.data().GLOBAL_MULTIPLIER;
+                    GLOBAL_MULTIPLIER_SILVER = doc.data().GLOBAL_MULTIPLIER_SILVER;
+                    localStorage.setItem('erp_globals', JSON.stringify({GLOBAL_MULTIPLIER, GLOBAL_MULTIPLIER_SILVER}));
                 }
             });
+            if (typeof UI !== 'undefined') {
+                UI.updateStoreStatus();
+                UI.updateLandingPage();
+                UI.updateRunningText();
+            }
+        }, err => console.error(err));
 
-            const batasWaktu = new Date();
-            batasWaktu.setDate(batasWaktu.getDate() - 60);
-            const batasWaktuStr = batasWaktu.toISOString();
-
-            db.collection('appointments').where('Timestamp', '>=', batasWaktuStr).onSnapshot(snapshot => {
-                let tempApts = [];
-                snapshot.forEach(doc => tempApts.push(doc.data()));
-                tempApts.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
-                dbAppointments = tempApts;
-                if(sessionUser) {
-                    if(sessionUser.Role === 'Admin') { UI.renderAdminLaporanView(); UI.renderAdminFinanceView(); }
-                    else { UI.renderDashboardView(); }
+        // 6. MONITORING REALTIME DATA TESTIMONI PELANGGAN
+        db.collection('testimonials').onSnapshot(snapshot => {
+            let temp = [];
+            snapshot.forEach(doc => {
+                let data = doc.data();
+                if(!data.UID) data.UID = doc.id; // Fallback jika UID tidak ada
+                temp.push(data);
+            });
+            
+            // Urutkan dari yang terbaru (descending)
+            temp.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+            
+            dbTestimonials = temp;
+            localStorage.setItem('erp_dbTestimonials', JSON.stringify(dbTestimonials));
+            
+            if (typeof UI !== 'undefined') {
+                UI.updateLandingPage();
+                // Jika sedang di halaman setting admin, render ulang tabelnya
+                if (document.getElementById('setTestiCol')) {
+                    if (typeof API !== 'undefined' && API.fetchTestimoniPaging) {
+                        API.fetchTestimoniPaging('FIRST');
+                    }
                 }
-            }, err => AppLogger.logError(err, "onSnapshot appointments"));
-
-            db.collection('finance').onSnapshot(snapshot => {
-                let tempFin = [];
-                snapshot.forEach(doc => tempFin.push(doc.data()));
-                dbFinance = tempFin;
-                if(sessionUser && sessionUser.Role === 'Admin') UI.renderAdminFinanceView();
-            }, err => AppLogger.logError(err, "onSnapshot finance"));
-
-            db.collection('users').orderBy('Timestamp', 'desc').limit(50).onSnapshot(snapshot => {
-                let tempUsers = [];
-                snapshot.forEach(doc => tempUsers.push(doc.data()));
-                dbUsers = tempUsers;
-            }, err => AppLogger.logError(err, "onSnapshot users"));
-
-            db.collection('gold_settings').onSnapshot(snapshot => {
-                let tempGold = [];
-                snapshot.forEach(doc => tempGold.push(doc.data()));
-                tempGold.sort((a, b) => (a.Urutan !== undefined ? a.Urutan : 9999) - (b.Urutan !== undefined ? b.Urutan : 9999));
-                dbGoldSettings = tempGold;
-                if(sessionUser && sessionUser.Role === 'Admin') UI.renderGoldSettingsView();
-            }, err => AppLogger.logError(err, "onSnapshot gold_settings"));
-        } catch(err) {
-            AppLogger.logError(err, "DBService.setupRealtimeListeners");
-        }
+            }
+        }, err => console.error(err));
     },
 
     updateNetworkStatus: function() {
