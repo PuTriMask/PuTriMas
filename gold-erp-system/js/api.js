@@ -349,6 +349,7 @@ const API = {
             // Pembaruan UI bawaan Anda
             UI.updateContactLinks(); 
             UI.updateLandingPage(); 
+            
             UI.updateStoreStatus(); 
             UI.updateRunningText(); 
 
