@@ -342,19 +342,29 @@ const API = {
                 appConfig.socials = [];
                 socRows.forEach((r, idx) => { appConfig.socials.push({ id: "s" + Date.now() + idx, platform: r.querySelector('.soc-plat').value, label: r.querySelector('.soc-label').value || "Tautan", url: r.querySelector('.soc-url').value }); });
             }
-            // Proteksi agar sistem tidak error jika elemen tidak ditemukan di layar admin
-            if(document.getElementById('splash-store-name')) document.getElementById('splash-store-name').innerText = appConfig.notaName;
-            if(document.getElementById('splash-tagline')) document.getElementById('splash-tagline').innerText = appConfig.storeTagline;
-            
-            // PRIORITAS UTAMA: Pindahkan Pembaruan UI ke ATAS sebelum sistem sibuk merespons Cloud!
-            UI.updateStoreStatus(); 
-            UI.updateRunningText(); 
-            try { UI.updateContactLinks(); } catch(e){} 
-            try { UI.updateLandingPage(); } catch(e){} 
-            
-            // Simpan data setelah antarmuka web berhasil berubah
+            document.getElementById('splash-store-name').innerText = appConfig.notaName; 
+            document.getElementById('splash-tagline').innerText = appConfig.storeTagline; 
             await AppStorage.save();
             
+            // Pembaruan UI bawaan Anda
+            UI.updateContactLinks(); 
+            UI.updateLandingPage(); 
+            UI.updateStoreStatus(); 
+            UI.updateRunningText(); 
+
+            // 👇 KODE PENYELESAIAN 0% RISIKO: Memaksa Banner Muncul Secara Instan Tanpa Refresh
+            const bannerMaintenance = document.getElementById('global-maintenance-banner');
+            if (bannerMaintenance) {
+                // Langsung ubah style CSS seketika tombol ditekan
+                bannerMaintenance.style.display = appConfig.isMaintenance ? 'block' : 'none';
+                
+                if (appConfig.isMaintenance) {
+                    // Pindahkan banner ke posisi paling atas layar (prepend)
+                    document.body.prepend(bannerMaintenance);
+                    bannerMaintenance.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> PEMBERITAHUAN: Sistem sedang dalam pemeliharaan (Maintenance) rutin. Fitur transaksi dihentikan sementara.';
+                    bannerMaintenance.style.zIndex = '999999';
+                }
+            }
             UI.toast("Pengaturan berhasil disimpan", "success");
         } catch (err) {
             AppLogger.logError(err, "API.saveAppConfig");
