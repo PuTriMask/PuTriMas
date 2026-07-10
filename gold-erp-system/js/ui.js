@@ -272,21 +272,19 @@ editAppointment: function(uid) {
         }
 
         // Failsafe: Jika elemen banner tidak ada di HTML, kita ciptakan secara otomatis
-        if (!maintBanner && appConfig.isMaintenance) {
+        if (!maintBanner) {
             maintBanner = document.createElement('div');
             maintBanner.id = 'global-maintenance-banner';
-            document.body.prepend(maintBanner);
+            document.body.prepend(maintBanner); // Selalu letakkan di paling atas
         }
 
-        // Pastikan Banner muncul kuat menimpa semua desain
         if (maintBanner) {
-            maintBanner.style.display = appConfig.isMaintenance ? 'block' : 'none';
-            
-            if(appConfig.isMaintenance) {
-                document.body.prepend(maintBanner); 
-                maintBanner.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> MAAF, SISTEM SEDANG DALAM PERBAIKAN / PEMELIHARAAN. Fitur transaksi dan pendaftaran baru ditutup sementara.';
-                // CSS !important memastikan warna dan posisi tidak bisa ditutupi elemen halaman apa pun
+            if (appConfig.isMaintenance) {
+                maintBanner.style.display = 'block';
+                maintBanner.innerHTML = '<i class="fa-solid fa-triangle-exclamation me-2 fa-fade"></i> MAAF, SISTEM SEDANG DALAM PERBAIKAN / PEMELIHARAAN. Fitur transaksi ditutup sementara.';
                 maintBanner.style.cssText = 'display: block; position: fixed; top: 0; left: 0; width: 100%; z-index: 999999 !important; background: linear-gradient(90deg, #b91c1c 0%, #ef4444 50%, #b91c1c 100%) !important; color: white !important; padding: 12px; text-align: center; font-weight: bold; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.5); border-bottom: 2px solid #7f1d1d;';
+            } else {
+                maintBanner.style.display = 'none';
             }
         }
     },
