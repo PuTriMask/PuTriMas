@@ -1496,31 +1496,4 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(() => {
         API.autoCompleteTransactions();
     }, 60000);
-
-    // 👇 KODE PERBAIKAN 1: Deteksi HP nyala/buka aplikasi kembali
-    document.addEventListener("visibilitychange", async () => {
-        if (document.visibilityState === 'visible') {
-            console.log("Aplikasi kembali aktif dari background...");
-            
-            // 1. Cek status jaringan terbaru
-            if (typeof DBService !== 'undefined' && typeof DBService.updateNetworkStatus === 'function') {
-                DBService.updateNetworkStatus();
-            }
-            
-            // 2. Tarik paksa konfigurasi terbaru dari server jika online
-            if (typeof isFirebaseActive !== 'undefined' && isFirebaseActive && navigator.onLine) {
-                try {
-                    const configDoc = await db.collection('erp_data').doc('appConfig').get();
-                    if (configDoc.exists) {
-                        appConfig = Object.assign(appConfig, configDoc.data());
-                    }
-                } catch(e) { console.error("Gagal sinkron config:", e); }
-            }
-
-            // 3. Render ulang UI Peringatan & Banner
-            if (typeof UI !== 'undefined') {
-                UI.updateStoreStatus();
-                UI.updateLandingPage();
-            }
-        }
-    });
+});
